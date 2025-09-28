@@ -9,17 +9,15 @@ import (
 	"net/http"
 	netUrl "net/url"
 	"strconv"
-	"time"
 )
 
 type Req struct {
-	method          string
-	rawUrl          string
-	headers         http.Header
-	queries         netUrl.Values
-	body            any
-	timeOutDuration time.Duration
-	userClient      *http.Client
+	method     string
+	rawUrl     string
+	headers    http.Header
+	queries    netUrl.Values
+	body       any
+	userClient *http.Client
 }
 
 func Get(url string) *Req {
@@ -141,11 +139,6 @@ func (r *Req) AuthToken(token string) *Req {
 
 func (r *Req) AcceptJson() *Req {
 	r.addHeader(HeaderAccept, MimeTypeJson)
-	return r
-}
-
-func (r *Req) TimeOutIn(duration time.Duration) *Req {
-	r.timeOutDuration = duration
 	return r
 }
 

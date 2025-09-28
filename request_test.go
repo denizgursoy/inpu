@@ -2,7 +2,10 @@ package inpu
 
 import (
 	"bytes"
+	"fmt"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/h2non/gock"
 )
@@ -87,6 +90,47 @@ func (e *ClientSuite) Test_Query_Parameters() {
 	e.Require().Equal(http.StatusOK, response.Status())
 }
 
+type StarWarsCharacter struct {
+	Name      string    `json:"name"`
+	Height    string    `json:"height"`
+	Mass      string    `json:"mass"`
+	HairColor string    `json:"hair_color"`
+	SkinColor string    `json:"skin_color"`
+	EyeColor  string    `json:"eye_color"`
+	BirthYear string    `json:"birth_year"`
+	Gender    string    `json:"gender"`
+	Homeworld string    `json:"homeworld"`
+	Films     []string  `json:"films"`
+	Species   []string  `json:"species"`
+	Vehicles  []string  `json:"vehicles"`
+	Starships []string  `json:"starships"`
+	Created   time.Time `json:"created"`
+	Edited    time.Time `json:"edited"`
+	Url       string    `json:"url"`
+}
+
+func (e *ClientSuite) Test_Multiple_Query_Parameterss() {
+
+	response, err := Get("https://swapi.dev/api/people/1").
+		QueryInt("foo", 1).
+		QueryString("foo1", "bar1").
+		Header("foo", "bar").
+		Header("foo1", "bar1").
+		AuthToken("bar-password").
+		Send()
+
+	if response.Status() == http.StatusOK {
+		lukeSkywalker := StarWarsCharacter{}
+		if err := response.UnmarshalJson(&lukeSkywalker); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(lukeSkywalker)
+	}
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
+}
+
 func (e *ClientSuite) Test_Multiple_Query_Parameters() {
 	// TODO test is wrong
 	gock.New(testUrl).
@@ -99,6 +143,8 @@ func (e *ClientSuite) Test_Multiple_Query_Parameters() {
 		QueryString("foo", "bar1").
 		QueryString("foo", "bar2").
 		Send()
+
+	Get("https://swapi.dev/api/people/1")
 
 	e.Require().NoError(err)
 	e.Require().Equal(http.StatusOK, response.Status())

@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	url = "https://x.com"
+	testUrl = "https://x.com"
 )
 
 var (
@@ -24,13 +24,13 @@ type ClientSuite struct {
 }
 
 func (e *ClientSuite) Test_Headers() {
-	gock.New(url).
+	gock.New(testUrl).
 		Get("/").
 		MatchHeader(HeaderContentType, MimeTypeJson).
 		MatchHeader(HeaderAccepts, MimeTypeJson).
 		Reply(http.StatusOK)
 
-	response, err := Get(url).
+	response, err := Get(testUrl).
 		AcceptJson().
 		ContentTypeJson().
 		Send()
@@ -40,12 +40,12 @@ func (e *ClientSuite) Test_Headers() {
 }
 
 func (e *ClientSuite) Test_Basic_Authentication() {
-	gock.New(url).
+	gock.New(testUrl).
 		Get("/").
 		BasicAuth(TestUserName, TestUserPassword).
 		Reply(http.StatusOK)
 
-	response, err := Get(url).
+	response, err := Get(testUrl).
 		AuthBasic(TestUserName, TestUserPassword).
 		Send()
 
@@ -55,13 +55,51 @@ func (e *ClientSuite) Test_Basic_Authentication() {
 
 func (e *ClientSuite) Test_Token_Authentication() {
 	token := "sdsds"
-	gock.New(url).
+	gock.New(testUrl).
 		Get("/").
 		MatchHeader(HeaderAuthorization, "Bearer "+token).
 		Reply(http.StatusOK)
 
-	response, err := Get(url).
+	response, err := Get(testUrl).
 		AuthToken(token).
+		Send()
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
+}
+
+func (e *ClientSuite) Test_Query_Parameters() {
+	gock.New(testUrl).
+		Get("/").
+		MatchParam("is_created", "true").
+		MatchParam("foo", "bar").
+		MatchParam("float", "1.2").
+		MatchParam("float64", "2.2").
+		MatchParam("int", "1").
+		Reply(http.StatusOK)
+
+	response, err := Get(testUrl).
+		QueryBool("is_created", true).
+		QueryString("foo", "bar").
+		QueryFloat32("float", 1.2).
+		QueryFloat64("float64", 2.2).
+		QueryInt("int", 1).
+		Send()
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
+}
+
+func (e *ClientSuite) Test_Multiple_Query_Parameters() {
+	gock.New(testUrl).
+		Get("/").
+		MatchParam("foo", "bar1").
+		MatchParam("foo", "bar2").
+		Reply(http.StatusOK)
+
+	response, err := Get(testUrl).
+		QueryString("foo", "bar1").
+		QueryString("foo", "bar2").
 		Send()
 
 	e.Require().NoError(err)

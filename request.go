@@ -6,58 +6,67 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	netUrl "net/url"
 	"strconv"
-	"sync"
 	"time"
 )
 
 type Req struct {
 	method          string
 	rawUrl          string
-	headers         sync.Map
-	queries         sync.Map
+	headers         http.Header
+	queries         netUrl.Values
 	body            io.Reader
 	timeOutDuration time.Duration
-	followRedirect  bool
 	userClient      *http.Client
 }
 
 func Get(url string) *Req {
 	return &Req{
-		method: http.MethodGet,
-		rawUrl: url,
+		method:  http.MethodGet,
+		rawUrl:  url,
+		queries: make(netUrl.Values),
+		headers: make(http.Header),
 	}
 }
 
 func Post(url string, body io.Reader) *Req {
 	return &Req{
-		method: http.MethodPost,
-		rawUrl: url,
-		body:   body,
+		method:  http.MethodPost,
+		rawUrl:  url,
+		body:    body,
+		queries: make(netUrl.Values),
+		headers: make(http.Header),
 	}
 }
 
 func Delete(url string, body io.Reader) *Req {
 	return &Req{
-		method: http.MethodDelete,
-		rawUrl: url,
-		body:   body,
+		method:  http.MethodDelete,
+		rawUrl:  url,
+		body:    body,
+		queries: make(netUrl.Values),
+		headers: make(http.Header),
 	}
 }
 
 func Put(url string, body io.Reader) *Req {
 	return &Req{
-		method: http.MethodPut,
-		rawUrl: url,
-		body:   body,
+		method:  http.MethodPut,
+		rawUrl:  url,
+		body:    body,
+		queries: make(netUrl.Values),
+		headers: make(http.Header),
 	}
 }
 
 func Patch(url string, body io.Reader) *Req {
 	return &Req{
-		method: http.MethodPatch,
-		rawUrl: url,
-		body:   body,
+		method:  http.MethodPatch,
+		rawUrl:  url,
+		body:    body,
+		queries: make(netUrl.Values),
+		headers: make(http.Header),
 	}
 }
 
@@ -117,11 +126,6 @@ func (r *Req) ContentType(contentType string) *Req {
 	return r
 }
 
-func (r *Req) FollowRedirect() *Req {
-	r.followRedirect = true
-	return r
-}
-
 func (r *Req) AuthBasic(username, password string) *Req {
 	cred := username + ":" + password
 	r.addHeader(HeaderAuthorization, "Basic "+base64.StdEncoding.EncodeToString([]byte(cred)))
@@ -145,13 +149,13 @@ func (r *Req) TimeOutIn(duration time.Duration) *Req {
 }
 
 func (r *Req) addQueryValue(key, value string) *Req {
-	r.queries.Store(key, value)
+	r.queries.Add(key, value)
 
 	return r
 }
 
 func (r *Req) addHeader(key, value string) *Req {
-	r.headers.Store(key, value)
+	r.headers.Add(key, value)
 
 	return r
 }
@@ -319,7 +323,7 @@ func (r *Req) Send() (*Response, error) {
 	client := r.prepareClient()
 	httpResponse, err := client.Do(request)
 	if err != nil {
-		return nil, fmt.Errorf("could not ")
+		return nil, fmt.Errorf("could not send the request: %w,%w", ErrConnectionFailed, err)
 	}
 
 	return newResponse(httpResponse), nil
@@ -337,21 +341,11 @@ func (r *Req) prepareClient() *http.Client {
 func (r *Req) prepareRequest() (*http.Request, error) {
 	request, err := http.NewRequest(r.method, r.rawUrl, r.body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize the request: %w", err)
+		return nil, fmt.Errorf("failed to initialize the request: %w, %w", ErrRequestCreationFailed, err)
 	}
+	request.Header = r.headers
 
-	r.headers.Range(func(key, value any) bool {
-		request.Header.Add(key.(string), value.(string))
-
-		return true
-	})
-
-	q := request.URL.Query()
-	r.queries.Range(func(key, val any) bool {
-		q.Add(key.(string), val.(string))
-		return true
-	})
-	request.URL.RawQuery = q.Encode()
+	request.URL.RawQuery = r.queries.Encode()
 
 	return request, nil
 }

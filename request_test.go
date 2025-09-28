@@ -1,13 +1,15 @@
 package inpu
 
 import (
+	"bytes"
 	"net/http"
-	"testing"
 
 	"github.com/h2non/gock"
-	"github.com/stretchr/testify/suite"
-	"go.uber.org/mock/gomock"
 )
+
+type testModel struct {
+	Foo string `json:"foo"`
+}
 
 var (
 	testUrl = "https://x.com"
@@ -17,11 +19,6 @@ var (
 	TestUserName     = "test-user"
 	TestUserPassword = "test-password"
 )
-
-type ClientSuite struct {
-	suite.Suite
-	controller *gomock.Controller
-}
 
 func (e *ClientSuite) Test_Headers() {
 	gock.New(testUrl).
@@ -107,11 +104,30 @@ func (e *ClientSuite) Test_Multiple_Query_Parameters() {
 	e.Require().Equal(http.StatusOK, response.Status())
 }
 
-func TestClientService(t *testing.T) {
-	suite.Run(t, new(ClientSuite))
+func (e *ClientSuite) Test_Body_Json_Marshal() {
+	gock.New(testUrl).
+		Post("/").
+		Body(bytes.NewReader([]byte(`{"foo":"bar"}`))).
+		Reply(http.StatusOK)
+
+	response, err :=
+		Post(testUrl, testModel{Foo: "bar"}).
+			Send()
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
 }
 
-func (e *ClientSuite) TearDownTest() {
-	gock.Off()
-	gock.RestoreClient(http.DefaultClient)
+func (e *ClientSuite) Test_Body_Reader() {
+	gock.New(testUrl).
+		Post("/").
+		Body(bytes.NewReader([]byte(`{"foo":"bar"}`))).
+		Reply(http.StatusOK)
+
+	response, err :=
+		Post(testUrl, bytes.NewReader([]byte(`{"foo":"bar"}`))).
+			Send()
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
 }

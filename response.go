@@ -43,6 +43,10 @@ func (r *Response) Status() int {
 	return r.r.StatusCode
 }
 
+func (r *Response) HttpResponse() *http.Response {
+	return r.r
+}
+
 func (r *Response) IsOneOf(statusCodes ...int) bool {
 	return slices.Contains(statusCodes, r.Status())
 }

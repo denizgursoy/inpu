@@ -363,11 +363,11 @@ func (r *Req) getBody() (io.Reader, error) {
 		case io.Reader:
 			body = v
 		default:
-			marshal, err := json.Marshal(r.body)
+			bodyAsBytes, err := json.Marshal(r.body)
 			if err != nil {
 				return nil, err
 			}
-			body = bytes.NewBuffer(marshal)
+			body = bytes.NewReader(bodyAsBytes)
 		}
 	}
 

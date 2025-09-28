@@ -1,6 +1,8 @@
 package inpu
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"slices"
 )
@@ -51,10 +53,15 @@ func (r *Response) IsOneOf(statusCodes ...int) bool {
 	return slices.Contains(statusCodes, r.Status())
 }
 
-func (r *Response) ParseJson(t any) error {
-	return nil
-}
+func (r *Response) UnmarshalJson(t any) error {
+	defer r.r.Body.Close()
+	all, err := io.ReadAll(r.r.Body)
+	if err != nil {
+		return err
+	}
+	if err = json.Unmarshal(all, t); err != nil {
+		return err
+	}
 
-func (r *Response) ParseText() (string, error) {
-	return "", nil
+	return nil
 }

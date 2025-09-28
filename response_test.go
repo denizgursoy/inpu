@@ -1,6 +1,7 @@
 package inpu
 
 import (
+	"bytes"
 	"net/http"
 
 	"github.com/h2non/gock"
@@ -54,4 +55,19 @@ func (e *ClientSuite) Test_Response_IsInformational() {
 	e.Require().True(response.Is(http.StatusContinue))
 	e.Require().True(response.Status() == http.StatusContinue)
 	e.Require().True(response.IsOneOf(http.StatusBadRequest, http.StatusContinue))
+}
+
+func (e *ClientSuite) Test_Response_UnmarshalJson() {
+	gock.New(testUrl).Post("/").Reply(http.StatusOK).Body(bytes.NewReader([]byte(`{"foo":"bar"}`)))
+	response, err := Post(testUrl, nil).Send()
+	e.Require().NoError(err)
+
+	result := testModel{}
+	err = response.UnmarshalJson(&result)
+	e.Require().NoError(err)
+
+	expectedResponse := testModel{
+		Foo: "bar",
+	}
+	e.Require().Equal(expectedResponse, result)
 }

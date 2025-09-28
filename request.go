@@ -2,7 +2,6 @@ package inpu
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -72,32 +71,32 @@ func Patch(url string, body any) *Req {
 	}
 }
 
-func (r *Req) UseHttp11() *Req {
-	// &http.Transport{ ForceAttemptHTTP2: false, // disable HTTP/2 }
-	return r
-}
-
+//	func (r *Req) UseHttp11() *Req {
+//		// &http.Transport{ ForceAttemptHTTP2: false, // disable HTTP/2 }
+//		return r
+//	}
+//
 // UseHttpClient can be used in the testing
 func (r *Req) UseHttpClient(client *http.Client) *Req {
-	// &http.Transport{ ForceAttemptHTTP2: false, // disable HTTP/2 }
 	r.userClient = client
 	return r
 }
 
-func (r *Req) UseTransport(transport *http.Transport) *Req {
-	// &http.Transport{ ForceAttemptHTTP2: false, // disable HTTP/2 }
-	return r
-}
-
-func (r *Req) UseTlsConfig(tlsConfig *tls.Config) *Req {
-	// &http.Transport{ ForceAttemptHTTP2: false, // disable HTTP/2 }
-	return r
-}
-
-func (r *Req) InsecureSkipVerify() *Req {
-	// tlsConfig := &tls.Config{InsecureSkipVerify: true}
-	return r
-}
+//
+// func (r *Req) UseTransport(transport *http.Transport) *Req {
+// 	// &http.Transport{ ForceAttemptHTTP2: false, // disable HTTP/2 }
+// 	return r
+// }
+//
+// func (r *Req) UseTlsConfig(tlsConfig *tls.Config) *Req {
+// 	// &http.Transport{ ForceAttemptHTTP2: false, // disable HTTP/2 }
+// 	return r
+// }
+//
+// func (r *Req) InsecureSkipVerify() *Req {
+// 	// tlsConfig := &tls.Config{InsecureSkipVerify: true}
+// 	return r
+// }
 
 func (r *Req) Header(key, val string) *Req {
 	r.addHeader(key, val)

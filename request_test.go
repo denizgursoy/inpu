@@ -3,10 +3,19 @@ package inpu
 import (
 	"net/http"
 	"testing"
-	"time"
 
+	"github.com/h2non/gock"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
+)
+
+var (
+	url = "https://x.com"
+)
+
+var (
+	TestUserName     = "test-user"
+	TestUserPassword = "test-password"
 )
 
 type ClientSuite struct {
@@ -14,39 +23,49 @@ type ClientSuite struct {
 	controller *gomock.Controller
 }
 
-func (e *ClientSuite) SetupSuite() {
+func (e *ClientSuite) Test_Headers() {
+	gock.New(url).
+		Get("/").
+		MatchHeader(HeaderContentType, MimeTypeJson).
+		MatchHeader(HeaderAccepts, MimeTypeJson).
+		Reply(http.StatusOK)
 
-}
-
-type TestMode struct {
-}
-
-func (e *ClientSuite) Test_HappyCase() {
-	response, err := Get("https://x.com").
+	response, err := Get(url).
 		AcceptJson().
 		ContentTypeJson().
-		QueryBool("triggerered", false).
-		QueryString("test", "").
-		Header("a", "b").
-		AuthBasic("sds", "asdsds").
-		FollowRedirect().
-		TimeOutIn(time.Second * 10).
 		Send()
-	if err != nil {
-		return
-	}
 
-	if response.Is(http.StatusOK) {
-		response.ParseJson(nil)
-	} else if response.IsOneOf(http.StatusBadRequest, http.StatusBadGateway) {
-		response.ParseJson(nil)
-	} else if response.IsServerError() {
-		response.ParseJson(nil)
-	}
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
 }
 
-func (e *ClientSuite) SetupTest() {
-	e.controller = gomock.NewController(e.T())
+func (e *ClientSuite) Test_Basic_Authentication() {
+	gock.New(url).
+		Get("/").
+		BasicAuth(TestUserName, TestUserPassword).
+		Reply(http.StatusOK)
+
+	response, err := Get(url).
+		AuthBasic(TestUserName, TestUserPassword).
+		Send()
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
+}
+
+func (e *ClientSuite) Test_Token_Authentication() {
+	token := "sdsds"
+	gock.New(url).
+		Get("/").
+		MatchHeader(HeaderAuthorization, "Bearer "+token).
+		Reply(http.StatusOK)
+
+	response, err := Get(url).
+		AuthToken(token).
+		Send()
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func TestClientService(t *testing.T) {
@@ -54,8 +73,6 @@ func TestClientService(t *testing.T) {
 }
 
 func (e *ClientSuite) TearDownTest() {
-	e.controller.Finish()
-}
-
-func (e *ClientSuite) TearDownSuite() {
+	gock.Off()
+	gock.RestoreClient(http.DefaultClient)
 }

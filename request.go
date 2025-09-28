@@ -3,19 +3,23 @@ package inpu
 import (
 	"crypto/tls"
 	"encoding/base64"
+	"fmt"
+	"io"
 	"net/http"
-	"net/url"
 	"strconv"
+	"sync"
 	"time"
 )
 
 type Req struct {
 	method          string
 	rawUrl          string
-	headers         map[string]string
-	body            any
+	headers         sync.Map
+	queries         sync.Map
+	body            io.Reader
 	timeOutDuration time.Duration
 	followRedirect  bool
+	userClient      *http.Client
 }
 
 func Get(url string) *Req {
@@ -25,7 +29,7 @@ func Get(url string) *Req {
 	}
 }
 
-func Post(url string, body any) *Req {
+func Post(url string, body io.Reader) *Req {
 	return &Req{
 		method: http.MethodPost,
 		rawUrl: url,
@@ -33,7 +37,7 @@ func Post(url string, body any) *Req {
 	}
 }
 
-func Delete(url string, body any) *Req {
+func Delete(url string, body io.Reader) *Req {
 	return &Req{
 		method: http.MethodDelete,
 		rawUrl: url,
@@ -41,7 +45,7 @@ func Delete(url string, body any) *Req {
 	}
 }
 
-func Put(url string, body any) *Req {
+func Put(url string, body io.Reader) *Req {
 	return &Req{
 		method: http.MethodPut,
 		rawUrl: url,
@@ -49,7 +53,7 @@ func Put(url string, body any) *Req {
 	}
 }
 
-func Patch(url string, body any) *Req {
+func Patch(url string, body io.Reader) *Req {
 	return &Req{
 		method: http.MethodPatch,
 		rawUrl: url,
@@ -65,6 +69,7 @@ func (r *Req) UseHttp11() *Req {
 // UseHttpClient can be used in the testing
 func (r *Req) UseHttpClient(client *http.Client) *Req {
 	// &http.Transport{ ForceAttemptHTTP2: false, // disable HTTP/2 }
+	r.userClient = client
 	return r
 }
 
@@ -80,6 +85,7 @@ func (r *Req) UseTlsConfig(tlsConfig *tls.Config) *Req {
 
 func (r *Req) InsecureSkipVerify() *Req {
 	// tlsConfig := &tls.Config{InsecureSkipVerify: true}
+	return r
 }
 
 func (r *Req) Header(key, val string) *Req {
@@ -88,25 +94,25 @@ func (r *Req) Header(key, val string) *Req {
 }
 
 func (r *Req) ContentTypeJson() *Req {
-	r.ContentType("application/json")
+	r.ContentType(MimeTypeJson)
 
 	return r
 }
 
 func (r *Req) ContentTypeText() *Req {
-	r.ContentType("text/plain")
+	r.ContentType(MimeTypeText)
 
 	return r
 }
 
 func (r *Req) ContentTypeHtml() *Req {
-	r.ContentType("text/html")
+	r.ContentType(MimeTypeHtml)
 
 	return r
 }
 
 func (r *Req) ContentType(contentType string) *Req {
-	r.addHeader("Content-Type", contentType)
+	r.addHeader(HeaderContentType, contentType)
 
 	return r
 }
@@ -118,18 +124,18 @@ func (r *Req) FollowRedirect() *Req {
 
 func (r *Req) AuthBasic(username, password string) *Req {
 	cred := username + ":" + password
-	r.addHeader("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(cred)))
+	r.addHeader(HeaderAuthorization, "Basic "+base64.StdEncoding.EncodeToString([]byte(cred)))
 
 	return r
 }
 
 func (r *Req) AuthToken(token string) *Req {
-	r.addHeader("Authorization", "Bearer "+token)
+	r.addHeader(HeaderAuthorization, "Bearer "+token)
 	return r
 }
 
 func (r *Req) AcceptJson() *Req {
-	r.addHeader("Accepts", "application/json")
+	r.addHeader(HeaderAccepts, MimeTypeJson)
 	return r
 }
 
@@ -139,20 +145,13 @@ func (r *Req) TimeOutIn(duration time.Duration) *Req {
 }
 
 func (r *Req) addQueryValue(key, value string) *Req {
-	u, err := url.Parse(r.rawUrl)
-	if err != nil {
-		// If the URL is invalid, return as-is
-		return r
-	}
-	q := u.Query()
-	q.Set(key, value)
-	u.RawQuery = q.Encode()
-	r.rawUrl = u.String()
+	r.queries.Store(key, value)
+
 	return r
 }
 
 func (r *Req) addHeader(key, value string) *Req {
-	r.headers[key] = value
+	r.headers.Store(key, value)
 
 	return r
 }
@@ -311,6 +310,48 @@ func (r *Req) QueryStringPtr(name string, v *string) *Req {
 	return r.QueryString(name, *v)
 }
 
-func (r *Req) Send() (Response, error) {
-	return Response{}, nil
+func (r *Req) Send() (*Response, error) {
+	request, err := r.prepareRequest()
+	if err != nil {
+		return nil, err
+	}
+
+	client := r.prepareClient()
+	httpResponse, err := client.Do(request)
+	if err != nil {
+		return nil, fmt.Errorf("could not ")
+	}
+
+	return newResponse(httpResponse), nil
+}
+
+func (r *Req) prepareClient() *http.Client {
+	client := http.DefaultClient
+	if r.userClient != nil {
+		client = r.userClient
+	}
+
+	return client
+}
+
+func (r *Req) prepareRequest() (*http.Request, error) {
+	request, err := http.NewRequest(r.method, r.rawUrl, r.body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize the request: %w", err)
+	}
+
+	r.headers.Range(func(key, value any) bool {
+		request.Header.Add(key.(string), value.(string))
+
+		return true
+	})
+
+	q := request.URL.Query()
+	r.queries.Range(func(key, val any) bool {
+		q.Add(key.(string), val.(string))
+		return true
+	})
+	request.URL.RawQuery = q.Encode()
+
+	return request, nil
 }

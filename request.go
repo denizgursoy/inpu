@@ -2,6 +2,7 @@ package inpu
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -9,15 +10,17 @@ import (
 	"net/http"
 	netUrl "net/url"
 	"strconv"
+	"time"
 )
 
 type Req struct {
-	method     string
-	rawUrl     string
-	headers    http.Header
-	queries    netUrl.Values
-	body       any
-	userClient *http.Client
+	method          string
+	rawUrl          string
+	headers         http.Header
+	queries         netUrl.Values
+	body            any
+	userClient      *http.Client
+	timeOutDuration time.Duration
 }
 
 func Get(url string) *Req {
@@ -69,32 +72,12 @@ func Patch(url string, body any) *Req {
 	}
 }
 
-//	func (r *Req) UseHttp11() *Req {
-//		// &http.Transport{ ForceAttemptHTTP2: false, // disable HTTP/2 }
-//		return r
-//	}
-//
 // UseHttpClient can be used in the testing
 func (r *Req) UseHttpClient(client *http.Client) *Req {
 	r.userClient = client
+
 	return r
 }
-
-//
-// func (r *Req) UseTransport(transport *http.Transport) *Req {
-// 	// &http.Transport{ ForceAttemptHTTP2: false, // disable HTTP/2 }
-// 	return r
-// }
-//
-// func (r *Req) UseTlsConfig(tlsConfig *tls.Config) *Req {
-// 	// &http.Transport{ ForceAttemptHTTP2: false, // disable HTTP/2 }
-// 	return r
-// }
-//
-// func (r *Req) InsecureSkipVerify() *Req {
-// 	// tlsConfig := &tls.Config{InsecureSkipVerify: true}
-// 	return r
-// }
 
 func (r *Req) Header(key, val string) *Req {
 	r.addHeader(key, val)
@@ -139,6 +122,12 @@ func (r *Req) AuthToken(token string) *Req {
 
 func (r *Req) AcceptJson() *Req {
 	r.addHeader(HeaderAccept, MimeTypeJson)
+	return r
+}
+
+func (r *Req) TimeOutIn(duration time.Duration) *Req {
+	r.timeOutDuration = duration
+
 	return r
 }
 
@@ -309,7 +298,20 @@ func (r *Req) QueryStringPtr(name string, v *string) *Req {
 }
 
 func (r *Req) Send() (*Response, error) {
-	request, err := r.prepareRequest()
+	return r.send(context.Background())
+}
+
+func (r *Req) SendCtx(ctx context.Context) (*Response, error) {
+	return r.send(ctx)
+}
+
+func (r *Req) send(ctx context.Context) (*Response, error) {
+	if r.timeOutDuration > 0 {
+		timedOutContext, cancel := context.WithTimeout(ctx, r.timeOutDuration)
+		ctx = timedOutContext
+		defer cancel()
+	}
+	request, err := r.prepareRequest(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -332,13 +334,13 @@ func (r *Req) prepareClient() *http.Client {
 	return client
 }
 
-func (r *Req) prepareRequest() (*http.Request, error) {
+func (r *Req) prepareRequest(ctx context.Context) (*http.Request, error) {
 	body, err := r.getBody()
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal: %w %w", ErrMarshalingFailed, err)
 	}
 
-	request, err := http.NewRequest(r.method, r.rawUrl, body)
+	request, err := http.NewRequestWithContext(ctx, r.method, r.rawUrl, body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize the request: %w, %w", ErrRequestCreationFailed, err)
 	}

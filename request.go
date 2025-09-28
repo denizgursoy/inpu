@@ -1,8 +1,10 @@
 package inpu
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,7 +18,7 @@ type Req struct {
 	rawUrl          string
 	headers         http.Header
 	queries         netUrl.Values
-	body            io.Reader
+	body            any
 	timeOutDuration time.Duration
 	userClient      *http.Client
 }
@@ -30,7 +32,7 @@ func Get(url string) *Req {
 	}
 }
 
-func Post(url string, body io.Reader) *Req {
+func Post(url string, body any) *Req {
 	return &Req{
 		method:  http.MethodPost,
 		rawUrl:  url,
@@ -40,7 +42,7 @@ func Post(url string, body io.Reader) *Req {
 	}
 }
 
-func Delete(url string, body io.Reader) *Req {
+func Delete(url string, body any) *Req {
 	return &Req{
 		method:  http.MethodDelete,
 		rawUrl:  url,
@@ -50,7 +52,7 @@ func Delete(url string, body io.Reader) *Req {
 	}
 }
 
-func Put(url string, body io.Reader) *Req {
+func Put(url string, body any) *Req {
 	return &Req{
 		method:  http.MethodPut,
 		rawUrl:  url,
@@ -60,7 +62,7 @@ func Put(url string, body io.Reader) *Req {
 	}
 }
 
-func Patch(url string, body io.Reader) *Req {
+func Patch(url string, body any) *Req {
 	return &Req{
 		method:  http.MethodPatch,
 		rawUrl:  url,
@@ -339,13 +341,35 @@ func (r *Req) prepareClient() *http.Client {
 }
 
 func (r *Req) prepareRequest() (*http.Request, error) {
-	request, err := http.NewRequest(r.method, r.rawUrl, r.body)
+	body, err := r.getBody()
+	if err != nil {
+		return nil, fmt.Errorf("could not marshal: %w %w", ErrMarshalingFailed, err)
+	}
+
+	request, err := http.NewRequest(r.method, r.rawUrl, body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize the request: %w, %w", ErrRequestCreationFailed, err)
 	}
 	request.Header = r.headers
-
 	request.URL.RawQuery = r.queries.Encode()
 
 	return request, nil
+}
+
+func (r *Req) getBody() (io.Reader, error) {
+	var body io.Reader
+	if r.body != nil {
+		switch v := r.body.(type) {
+		case io.Reader:
+			body = v
+		default:
+			marshal, err := json.Marshal(r.body)
+			if err != nil {
+				return nil, err
+			}
+			body = bytes.NewBuffer(marshal)
+		}
+	}
+
+	return body, nil
 }

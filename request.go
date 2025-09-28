@@ -141,7 +141,7 @@ func (r *Req) AuthToken(token string) *Req {
 }
 
 func (r *Req) AcceptJson() *Req {
-	r.addHeader(HeaderAccepts, MimeTypeJson)
+	r.addHeader(HeaderAccept, MimeTypeJson)
 	return r
 }
 

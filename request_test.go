@@ -27,7 +27,7 @@ func (e *ClientSuite) Test_Headers() {
 	gock.New(testUrl).
 		Get("/").
 		MatchHeader(HeaderContentType, MimeTypeJson).
-		MatchHeader(HeaderAccepts, MimeTypeJson).
+		MatchHeader(HeaderAccept, MimeTypeJson).
 		Reply(http.StatusOK)
 
 	response, err := Get(testUrl).

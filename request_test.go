@@ -91,6 +91,7 @@ func (e *ClientSuite) Test_Query_Parameters() {
 }
 
 func (e *ClientSuite) Test_Multiple_Query_Parameters() {
+	// TODO test is wrong
 	gock.New(testUrl).
 		Get("/").
 		MatchParam("foo", "bar1").

@@ -21,62 +21,58 @@ type Req struct {
 	body            any
 	userClient      *http.Client
 	timeOutDuration time.Duration
+	genericTimeout  time.Duration
+}
+
+func newRequest(method, rawUrl string, body any, headers http.Header, queries netUrl.Values, userClient *http.Client, genericTimeout time.Duration) *Req {
+	return &Req{
+		method:         method,
+		rawUrl:         rawUrl,
+		headers:        headers,
+		queries:        queries,
+		body:           body,
+		userClient:     userClient,
+		genericTimeout: genericTimeout,
+	}
 }
 
 func Get(url string) *Req {
-	return &Req{
-		method:  http.MethodGet,
-		rawUrl:  url,
-		queries: make(netUrl.Values),
-		headers: make(http.Header),
-	}
+	return getReq(url, make(http.Header), make(netUrl.Values), nil, 0)
+}
+
+func getReq(url string, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
+	return newRequest(http.MethodGet, url, nil, headers, queries, client, genericTimeout)
 }
 
 func Post(url string, body any) *Req {
-	return &Req{
-		method:  http.MethodPost,
-		rawUrl:  url,
-		body:    body,
-		queries: make(netUrl.Values),
-		headers: make(http.Header),
-	}
+	return postReq(url, body, make(http.Header), make(netUrl.Values), nil, 0)
+}
+func postReq(url string, body any, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
+	return newRequest(http.MethodPost, url, body, headers, queries, client, genericTimeout)
 }
 
 func Delete(url string, body any) *Req {
-	return &Req{
-		method:  http.MethodDelete,
-		rawUrl:  url,
-		body:    body,
-		queries: make(netUrl.Values),
-		headers: make(http.Header),
-	}
+	return deleteReq(url, body, make(http.Header), make(netUrl.Values), nil, 0)
+}
+
+func deleteReq(url string, body any, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
+	return newRequest(http.MethodDelete, url, body, headers, queries, client, genericTimeout)
 }
 
 func Put(url string, body any) *Req {
-	return &Req{
-		method:  http.MethodPut,
-		rawUrl:  url,
-		body:    body,
-		queries: make(netUrl.Values),
-		headers: make(http.Header),
-	}
+	return putReq(url, body, make(http.Header), make(netUrl.Values), nil, 0)
+}
+
+func putReq(url string, body any, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
+	return newRequest(http.MethodPut, url, body, headers, queries, client, genericTimeout)
 }
 
 func Patch(url string, body any) *Req {
-	return &Req{
-		method:  http.MethodPatch,
-		rawUrl:  url,
-		body:    body,
-		queries: make(netUrl.Values),
-		headers: make(http.Header),
-	}
+	return patchReq(url, body, make(http.Header), make(netUrl.Values), nil, 0)
 }
 
-// UseHttpClient can be used in the testing
-func (r *Req) UseHttpClient(client *http.Client) *Req {
-	r.userClient = client
-
-	return r
+func patchReq(url string, body any, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
+	return newRequest(http.MethodPatch, url, body, headers, queries, client, genericTimeout)
 }
 
 func (r *Req) Header(key, val string) *Req {

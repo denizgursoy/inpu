@@ -2,10 +2,7 @@ package inpu
 
 import (
 	"bytes"
-	"fmt"
-	"log"
 	"net/http"
-	"time"
 
 	"github.com/h2non/gock"
 )
@@ -14,13 +11,13 @@ type testModel struct {
 	Foo string `json:"foo"`
 }
 
-var (
-	testUrl = "https://x.com"
-)
+var testUrl = "https://x.com"
 
 var (
 	TestUserName     = "test-user"
 	TestUserPassword = "test-password"
+	testData         = testModel{Foo: "bar"}
+	testDataAsJson   = `{"foo":"bar"}`
 )
 
 func (e *ClientSuite) Test_Headers() {
@@ -90,47 +87,6 @@ func (e *ClientSuite) Test_Query_Parameters() {
 	e.Require().Equal(http.StatusOK, response.Status())
 }
 
-type StarWarsCharacter struct {
-	Name      string    `json:"name"`
-	Height    string    `json:"height"`
-	Mass      string    `json:"mass"`
-	HairColor string    `json:"hair_color"`
-	SkinColor string    `json:"skin_color"`
-	EyeColor  string    `json:"eye_color"`
-	BirthYear string    `json:"birth_year"`
-	Gender    string    `json:"gender"`
-	Homeworld string    `json:"homeworld"`
-	Films     []string  `json:"films"`
-	Species   []string  `json:"species"`
-	Vehicles  []string  `json:"vehicles"`
-	Starships []string  `json:"starships"`
-	Created   time.Time `json:"created"`
-	Edited    time.Time `json:"edited"`
-	Url       string    `json:"url"`
-}
-
-func (e *ClientSuite) Test_Multiple_Query_Parameterss() {
-
-	response, err := Get("https://swapi.dev/api/people/1").
-		QueryInt("foo", 1).
-		QueryString("foo1", "bar1").
-		Header("foo", "bar").
-		Header("foo1", "bar1").
-		AuthToken("bar-password").
-		Send()
-
-	if response.Status() == http.StatusOK {
-		lukeSkywalker := StarWarsCharacter{}
-		if err := response.UnmarshalJson(&lukeSkywalker); err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(lukeSkywalker)
-	}
-
-	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
-}
-
 func (e *ClientSuite) Test_Multiple_Query_Parameters() {
 	// TODO test is wrong
 	gock.New(testUrl).
@@ -144,8 +100,6 @@ func (e *ClientSuite) Test_Multiple_Query_Parameters() {
 		QueryString("foo", "bar2").
 		Send()
 
-	Get("https://swapi.dev/api/people/1")
-
 	e.Require().NoError(err)
 	e.Require().Equal(http.StatusOK, response.Status())
 }
@@ -153,12 +107,11 @@ func (e *ClientSuite) Test_Multiple_Query_Parameters() {
 func (e *ClientSuite) Test_Body_Json_Marshal() {
 	gock.New(testUrl).
 		Post("/").
-		Body(bytes.NewReader([]byte(`{"foo":"bar"}`))).
+		BodyString(testDataAsJson).
 		Reply(http.StatusOK)
 
-	response, err :=
-		Post(testUrl, testModel{Foo: "bar"}).
-			Send()
+	response, err := Post(testUrl, testData).
+		Send()
 
 	e.Require().NoError(err)
 	e.Require().Equal(http.StatusOK, response.Status())
@@ -167,12 +120,11 @@ func (e *ClientSuite) Test_Body_Json_Marshal() {
 func (e *ClientSuite) Test_Body_Reader() {
 	gock.New(testUrl).
 		Post("/").
-		Body(bytes.NewReader([]byte(`{"foo":"bar"}`))).
+		BodyString(testDataAsJson).
 		Reply(http.StatusOK)
 
-	response, err :=
-		Post(testUrl, bytes.NewReader([]byte(`{"foo":"bar"}`))).
-			Send()
+	response, err := Post(testUrl, bytes.NewReader([]byte(testDataAsJson))).
+		Send()
 
 	e.Require().NoError(err)
 	e.Require().Equal(http.StatusOK, response.Status())

@@ -1,5 +1,6 @@
 # Easy to use HTTP client in Go
-Inpu is a Go HTTP client.
+`Inpu` is a Go HTTP client that allows developers to create request with builder pattern. It also 
+provider some utility methods and common constants.
 
 To download:`go get github.com/denizgursoy/inpu`
 

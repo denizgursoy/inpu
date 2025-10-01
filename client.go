@@ -15,6 +15,7 @@ type Client struct {
 	queries         netUrl.Values
 	userClient      *http.Client
 	timeOutDuration time.Duration
+	basePath        string
 }
 
 func New() *Client {
@@ -34,42 +35,42 @@ func NewWithHttpClient(client *http.Client) *Client {
 }
 
 func (c *Client) Get(url string) *Req {
-	return getReq(context.Background(), url, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration)
+	return getReq(context.Background(), url, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
 }
 
 func (c *Client) GetCtx(ctx context.Context, url string) *Req {
-	return getReq(ctx, url, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration)
+	return getReq(ctx, url, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
 }
 
 func (c *Client) Post(url string, body any) *Req {
-	return postReq(context.Background(), url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration)
+	return postReq(context.Background(), url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
 }
 
 func (c *Client) PostCtx(ctx context.Context, url string, body any) *Req {
-	return postReq(ctx, url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration)
+	return postReq(ctx, url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
 }
 
 func (c *Client) Delete(url string, body any) *Req {
-	return deleteReq(context.Background(), url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration)
+	return deleteReq(context.Background(), url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
 }
 
 func (c *Client) DeleteCtx(ctx context.Context, url string, body any) *Req {
-	return deleteReq(ctx, url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration)
+	return deleteReq(ctx, url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
 }
 
 func (c *Client) Put(url string, body any) *Req {
-	return putReq(context.Background(), url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration)
+	return putReq(context.Background(), url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
 }
 
 func (c *Client) PutCtx(ctx context.Context, url string, body any) *Req {
-	return putReq(ctx, url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration)
+	return putReq(ctx, url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
 }
 
 func (c *Client) Patch(url string, body any) *Req {
-	return patchReq(context.Background(), url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration)
+	return patchReq(context.Background(), url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
 }
 func (c *Client) PatchCtx(ctx context.Context, url string, body any) *Req {
-	return patchReq(ctx, url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration)
+	return patchReq(ctx, url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
 }
 
 func (c *Client) Header(key, val string) *Client {
@@ -309,4 +310,10 @@ func (c *Client) QueryStringPtr(name string, v *string) *Client {
 		return c
 	}
 	return c.QueryString(name, *v)
+}
+
+func (c *Client) BasePath(basePath string) *Client {
+	c.basePath = basePath
+
+	return c
 }

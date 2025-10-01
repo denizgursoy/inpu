@@ -34,5 +34,4 @@ func (e *ClientSuite) Test_RequestModifierMiddleware() {
 
 	e.Require().NoError(err)
 	e.Require().Equal(http.StatusOK, response.Status())
-
 }

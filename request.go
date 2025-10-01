@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,65 +15,105 @@ import (
 )
 
 type Req struct {
-	method          string
-	rawUrl          string
-	headers         http.Header
-	queries         netUrl.Values
-	body            any
-	userClient      *http.Client
-	timeOutDuration time.Duration
-	genericTimeout  time.Duration
-}
-
-func newRequest(method, rawUrl string, body any, headers http.Header, queries netUrl.Values, userClient *http.Client, genericTimeout time.Duration) *Req {
-	return &Req{
-		method:         method,
-		rawUrl:         rawUrl,
-		headers:        headers,
-		queries:        queries,
-		body:           body,
-		userClient:     userClient,
-		genericTimeout: genericTimeout,
-	}
+	userClient           *http.Client
+	genericTimeout       time.Duration
+	httpReq              *http.Request
+	requestCreationError error
+	bodyCreationError    error
 }
 
 func Get(url string) *Req {
-	return getReq(url, make(http.Header), make(netUrl.Values), nil, 0)
+	return getReq(context.Background(), url, nil, nil, nil, 0)
 }
 
-func getReq(url string, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
-	return newRequest(http.MethodGet, url, nil, headers, queries, client, genericTimeout)
+func GetCtx(ctx context.Context, url string) *Req {
+	return getReq(ctx, url, nil, nil, nil, 0)
 }
 
 func Post(url string, body any) *Req {
-	return postReq(url, body, make(http.Header), make(netUrl.Values), nil, 0)
+	return postReq(context.Background(), url, body, nil, nil, nil, 0)
 }
-func postReq(url string, body any, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
-	return newRequest(http.MethodPost, url, body, headers, queries, client, genericTimeout)
+
+func PostCtx(ctx context.Context, url string, body any) *Req {
+	return postReq(ctx, url, body, nil, nil, nil, 0)
 }
 
 func Delete(url string, body any) *Req {
-	return deleteReq(url, body, make(http.Header), make(netUrl.Values), nil, 0)
+	return deleteReq(context.Background(), url, body, nil, nil, nil, 0)
 }
 
-func deleteReq(url string, body any, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
-	return newRequest(http.MethodDelete, url, body, headers, queries, client, genericTimeout)
+func DeleteCtx(ctx context.Context, url string, body any) *Req {
+	return deleteReq(ctx, url, body, nil, nil, nil, 0)
 }
 
 func Put(url string, body any) *Req {
-	return putReq(url, body, make(http.Header), make(netUrl.Values), nil, 0)
+	return putReq(context.Background(), url, body, nil, nil, nil, 0)
 }
 
-func putReq(url string, body any, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
-	return newRequest(http.MethodPut, url, body, headers, queries, client, genericTimeout)
+func PutCtx(ctx context.Context, url string, body any) *Req {
+	return putReq(ctx, url, body, nil, nil, nil, 0)
 }
 
 func Patch(url string, body any) *Req {
-	return patchReq(url, body, make(http.Header), make(netUrl.Values), nil, 0)
+	return patchReq(context.Background(), url, body, nil, nil, nil, 0)
 }
 
-func patchReq(url string, body any, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
-	return newRequest(http.MethodPatch, url, body, headers, queries, client, genericTimeout)
+func PatchCtx(ctx context.Context, url string, body any) *Req {
+	return patchReq(ctx, url, body, nil, nil, nil, 0)
+}
+
+func getReq(ctx context.Context, url string, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
+	return newRequest(ctx, http.MethodGet, url, nil, headers, queries, client, genericTimeout)
+}
+
+func postReq(ctx context.Context, url string, body any, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
+	return newRequest(ctx, http.MethodPost, url, body, headers, queries, client, genericTimeout)
+}
+
+func deleteReq(ctx context.Context, url string, body any, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
+	return newRequest(ctx, http.MethodDelete, url, body, headers, queries, client, genericTimeout)
+}
+
+func putReq(ctx context.Context, url string, body any, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
+	return newRequest(ctx, http.MethodPut, url, body, headers, queries, client, genericTimeout)
+}
+
+func patchReq(ctx context.Context, url string, body any, headers http.Header, queries netUrl.Values, client *http.Client, genericTimeout time.Duration) *Req {
+	return newRequest(ctx, http.MethodPatch, url, body, headers, queries, client, genericTimeout)
+}
+
+func newRequest(ctx context.Context, method, rawUrl string, body any, headers http.Header, queries netUrl.Values, userClient *http.Client, genericTimeout time.Duration) *Req {
+	reader, bodyCreationError := getBody(body)
+	httpReq, requestCreationError := http.NewRequestWithContext(ctx, method, rawUrl, reader)
+	isSuccessful := requestCreationError == nil && bodyCreationError == nil
+	if headers != nil && isSuccessful {
+		for k, v := range headers {
+			for _, v1 := range v {
+				httpReq.Header.Add(k, v1)
+			}
+		}
+	}
+	if queries != nil && isSuccessful {
+		query := httpReq.URL.Query()
+		for k, v := range queries {
+			for _, v1 := range v {
+				query.Add(k, v1)
+			}
+		}
+		httpReq.URL.RawQuery = query.Encode()
+	}
+
+	return &Req{
+		userClient:           userClient,
+		genericTimeout:       genericTimeout,
+		requestCreationError: requestCreationError,
+		bodyCreationError:    bodyCreationError,
+		httpReq:              httpReq,
+	}
+}
+
+func (r *Req) isSuccessfullyCreated() bool {
+	return r.requestCreationError == nil && r.bodyCreationError == nil
 }
 
 func (r *Req) Header(key, val string) *Req {
@@ -121,20 +162,19 @@ func (r *Req) AcceptJson() *Req {
 	return r
 }
 
-func (r *Req) TimeOutIn(duration time.Duration) *Req {
-	r.timeOutDuration = duration
-
-	return r
-}
-
 func (r *Req) addQueryValue(key, value string) *Req {
-	r.queries.Add(key, value)
-
+	if r.isSuccessfullyCreated() {
+		query := r.httpReq.URL.Query()
+		query.Add(key, value)
+		r.httpReq.URL.RawQuery = query.Encode()
+	}
 	return r
 }
 
 func (r *Req) addHeader(key, value string) *Req {
-	r.headers.Add(key, value)
+	if r.isSuccessfullyCreated() {
+		r.httpReq.Header.Add(key, value)
+	}
 
 	return r
 }
@@ -294,26 +334,15 @@ func (r *Req) QueryStringPtr(name string, v *string) *Req {
 }
 
 func (r *Req) Send() (*Response, error) {
-	return r.send(context.Background())
-}
-
-func (r *Req) SendCtx(ctx context.Context) (*Response, error) {
-	return r.send(ctx)
-}
-
-func (r *Req) send(ctx context.Context) (*Response, error) {
-	if r.timeOutDuration > 0 {
-		timedOutContext, cancel := context.WithTimeout(ctx, r.timeOutDuration)
-		ctx = timedOutContext
-		defer cancel()
+	if !r.isSuccessfullyCreated() {
+		return nil, errors.Join(r.requestCreationError, r.bodyCreationError)
 	}
-	request, err := r.prepareRequest(ctx)
-	if err != nil {
-		return nil, err
+	client := http.DefaultClient
+	if r.userClient != nil {
+		client = r.userClient
 	}
 
-	client := r.prepareClient()
-	httpResponse, err := client.Do(request)
+	httpResponse, err := client.Do(r.httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("could not send the request: %w,%w", ErrConnectionFailed, err)
 	}
@@ -321,39 +350,14 @@ func (r *Req) send(ctx context.Context) (*Response, error) {
 	return newResponse(httpResponse), nil
 }
 
-func (r *Req) prepareClient() *http.Client {
-	client := http.DefaultClient
-	if r.userClient != nil {
-		client = r.userClient
-	}
-
-	return client
-}
-
-func (r *Req) prepareRequest(ctx context.Context) (*http.Request, error) {
-	body, err := r.getBody()
-	if err != nil {
-		return nil, fmt.Errorf("could not marshal: %w %w", ErrMarshalingFailed, err)
-	}
-
-	request, err := http.NewRequestWithContext(ctx, r.method, r.rawUrl, body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize the request: %w, %w", ErrRequestCreationFailed, err)
-	}
-	request.Header = r.headers
-	request.URL.RawQuery = r.queries.Encode()
-
-	return request, nil
-}
-
-func (r *Req) getBody() (io.Reader, error) {
+func getBody(reqBody any) (io.Reader, error) {
 	var body io.Reader
-	if r.body != nil {
-		switch v := r.body.(type) {
+	if reqBody != nil {
+		switch v := reqBody.(type) {
 		case io.Reader:
 			body = v
 		default:
-			bodyAsBytes, err := json.Marshal(r.body)
+			bodyAsBytes, err := json.Marshal(reqBody)
 			if err != nil {
 				return nil, err
 			}

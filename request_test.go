@@ -11,7 +11,7 @@ type testModel struct {
 	Foo string `json:"foo"`
 }
 
-var testUrl = "https://x.com"
+var testUrl = "https://localhost"
 
 var (
 	TestUserName     = "test-user"

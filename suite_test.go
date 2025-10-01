@@ -16,7 +16,13 @@ func TestClientService(t *testing.T) {
 	suite.Run(t, new(ClientSuite))
 }
 
+func (e *ClientSuite) SetupTest() {
+	// gock.EnableNetworking()
+	gock.Observe(gock.DumpRequest)
+}
+
 func (e *ClientSuite) TearDownTest() {
 	gock.Off()
 	gock.RestoreClient(http.DefaultClient)
+	// gock.DisableNetworking()
 }

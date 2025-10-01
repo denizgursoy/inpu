@@ -58,11 +58,21 @@ func (c *Client) Header(key, val string) *Client {
 }
 
 func (c *Client) UseMiddlewares(mws ...Middleware) *Client {
+	c.setDefaultTransportIfEmpty()
+
 	for i := range mws {
 		middleware := mws[i]
 		if middleware != nil {
 			c.userClient.Transport = middleware(c.userClient.Transport)
 		}
+	}
+
+	return c
+}
+
+func (c *Client) setDefaultTransportIfEmpty() *Client {
+	if c.userClient.Transport == nil {
+		c.userClient.Transport = http.DefaultTransport
 	}
 
 	return c

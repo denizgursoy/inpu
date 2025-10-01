@@ -1,0 +1,66 @@
+package inpu
+
+import (
+	"bytes"
+	"io"
+	"log"
+	"net/http"
+	"time"
+)
+
+// LoggingMiddleware logs request and response details
+type loggingTransport struct {
+	next    http.RoundTripper
+	verbose bool
+}
+
+// LoggingMiddleware creates a logging middleware
+func LoggingMiddleware(verbose bool) Middleware {
+	return func(next http.RoundTripper) http.RoundTripper {
+		return &loggingTransport{
+			next:    next,
+			verbose: verbose,
+		}
+	}
+}
+
+func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	start := time.Now()
+
+	// Log request
+	log.Printf("→ [%s] %s", req.Method, req.URL.String())
+
+	if t.verbose {
+		log.Printf("  Headers: %v", req.Header)
+		if req.Body != nil {
+			body, _ := io.ReadAll(req.Body)
+			req.Body = io.NopCloser(bytes.NewBuffer(body))
+			log.Printf("  Body: %s", string(body))
+		}
+	}
+
+	// Execute request
+	resp, err := t.next.RoundTrip(req)
+	duration := time.Since(start)
+
+	// Log response
+	if err != nil {
+		log.Printf("← [%s] %s - ERROR: %v (took %v)",
+			req.Method, req.URL.String(), err, duration)
+		return resp, err
+	}
+
+	log.Printf("← [%s] %s - Status: %d - Duration: %v",
+		req.Method, req.URL.String(), resp.StatusCode, duration)
+
+	if t.verbose {
+		log.Printf("  Response Headers: %v", resp.Header)
+		if resp.Body != nil {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body = io.NopCloser(bytes.NewBuffer(body))
+			log.Printf("  Response Body: %s", string(body))
+		}
+	}
+
+	return resp, nil
+}

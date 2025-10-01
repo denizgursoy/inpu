@@ -18,8 +18,9 @@ type Client struct {
 
 func New() *Client {
 	return &Client{
-		headers: make(http.Header),
-		queries: make(netUrl.Values),
+		headers:    make(http.Header),
+		queries:    make(netUrl.Values),
+		userClient: &http.Client{},
 	}
 }
 
@@ -53,6 +54,17 @@ func (c *Client) Patch(url string, body any) *Req {
 
 func (c *Client) Header(key, val string) *Client {
 	c.addHeader(key, val)
+	return c
+}
+
+func (c *Client) UseMiddlewares(mws ...Middleware) *Client {
+	for i := range mws {
+		middleware := mws[i]
+		if middleware != nil {
+			c.userClient.Transport = middleware(c.userClient.Transport)
+		}
+	}
+
 	return c
 }
 

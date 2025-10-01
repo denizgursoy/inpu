@@ -12,7 +12,7 @@ response, err := Get("https://swapi.dev/api/people/1").
     Send()
 ```
 Does the following call
-```http request
+```
 https://swapi.dev/api/people/1?foo=1&foo1=bar1 
 Authorization: Bearer bar-password
 Foo: bar
@@ -45,7 +45,7 @@ client := New().
 	response, err :=client.Get("/people/1").Send()
 ```
 it creates the same get call
-```http request
+```
 https://swapi.dev/api/people/1?foo=1&foo1=bar1 
 Authorization: Bearer bar-password
 Foo: bar

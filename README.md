@@ -1,6 +1,8 @@
 # Easy to use HTTP client in Go
 Inpu is a Go HTTP client.
 
+To download:`go get github.com/denizgursoy/inpu`
+
 ## Build the request and send
 ```go
 response, err := Get("https://swapi.dev/api/people/1").

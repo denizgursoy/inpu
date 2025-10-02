@@ -3,7 +3,6 @@ package inpu
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -166,14 +165,13 @@ func (r *Req) ContentType(contentType string) *Req {
 }
 
 func (r *Req) AuthBasic(username, password string) *Req {
-	cred := username + ":" + password
-	r.addHeader(HeaderAuthorization, "Basic "+base64.StdEncoding.EncodeToString([]byte(cred)))
+	r.addHeader(HeaderAuthorization, getBasicAuthHeaderValue(username, password))
 
 	return r
 }
 
 func (r *Req) AuthToken(token string) *Req {
-	r.addHeader(HeaderAuthorization, "Bearer "+token)
+	r.addHeader(HeaderAuthorization, getTokenHeaderValue(token))
 	return r
 }
 

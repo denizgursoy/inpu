@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-// LoggingMiddleware logs request and response details
+// requestModifierTransport modifies the request only
 type requestModifierTransport struct {
 	next     http.RoundTripper
 	modifier RequestModifier

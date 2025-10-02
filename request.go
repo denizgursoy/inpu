@@ -177,6 +177,12 @@ func (r *Req) AuthToken(token string) *Req {
 
 func (r *Req) AcceptJson() *Req {
 	r.addHeader(HeaderAccept, MimeTypeJson)
+
+	return r
+}
+func (r *Req) UserAgent(userAgent string) *Req {
+	r.addHeader(HeaderUserAgent, userAgent)
+
 	return r
 }
 

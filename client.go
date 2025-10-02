@@ -135,6 +135,12 @@ func (c *Client) AuthToken(token string) *Client {
 	return c
 }
 
+func (c *Client) UserAgent(userAgent string) *Client {
+	c.addHeader(HeaderUserAgent, userAgent)
+
+	return c
+}
+
 func (c *Client) AcceptJson() *Client {
 	c.addHeader(HeaderAccept, MimeTypeJson)
 	return c
@@ -218,6 +224,7 @@ func (c *Client) QueryInt8Ptr(name string, v *int8) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryInt8(name, *v)
 }
 
@@ -225,6 +232,7 @@ func (c *Client) QueryInt16Ptr(name string, v *int16) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryInt16(name, *v)
 }
 
@@ -232,6 +240,7 @@ func (c *Client) QueryInt32Ptr(name string, v *int32) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryInt32(name, *v)
 }
 
@@ -239,6 +248,7 @@ func (c *Client) QueryIntPtr(name string, v *int) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryInt(name, *v)
 }
 
@@ -246,6 +256,7 @@ func (c *Client) QueryInt64Ptr(name string, v *int64) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryInt64(name, *v)
 }
 
@@ -253,6 +264,7 @@ func (c *Client) QueryUint8Ptr(name string, v *uint8) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryUint8(name, *v)
 }
 
@@ -260,6 +272,7 @@ func (c *Client) QueryUint16Ptr(name string, v *uint16) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryUint16(name, *v)
 }
 
@@ -267,6 +280,7 @@ func (c *Client) QueryUint32Ptr(name string, v *uint32) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryUint32(name, *v)
 }
 
@@ -274,6 +288,7 @@ func (c *Client) QueryUintPtr(name string, v *uint) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryUint(name, *v)
 }
 
@@ -281,6 +296,7 @@ func (c *Client) QueryUint64Ptr(name string, v *uint64) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryUint64(name, *v)
 }
 
@@ -288,6 +304,7 @@ func (c *Client) QueryFloat32Ptr(name string, v *float32) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryFloat32(name, *v)
 }
 
@@ -295,6 +312,7 @@ func (c *Client) QueryFloat64Ptr(name string, v *float64) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryFloat64(name, *v)
 }
 
@@ -302,6 +320,7 @@ func (c *Client) QueryBoolPtr(name string, v *bool) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryBool(name, *v)
 }
 
@@ -309,6 +328,7 @@ func (c *Client) QueryStringPtr(name string, v *string) *Client {
 	if v == nil {
 		return c
 	}
+
 	return c.QueryString(name, *v)
 }
 
@@ -324,5 +344,6 @@ func getTokenHeaderValue(token string) string {
 
 func getBasicAuthHeaderValue(username, password string) string {
 	cred := username + ":" + password
+
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(cred))
 }

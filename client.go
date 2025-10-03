@@ -69,6 +69,7 @@ func (c *Client) PutCtx(ctx context.Context, url string, body any) *Req {
 func (c *Client) Patch(url string, body any) *Req {
 	return patchReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
+
 func (c *Client) PatchCtx(ctx context.Context, url string, body any) *Req {
 	return patchReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
@@ -152,6 +153,18 @@ func (c *Client) ContentTypeText() *Client {
 
 func (c *Client) ContentTypeHtml() *Client {
 	c.ContentType(MimeTypeHtml)
+
+	return c
+}
+
+func (c *Client) ContentTypeXml() *Client {
+	c.ContentType(MimeTypeApplicationXml)
+
+	return c
+}
+
+func (c *Client) ContentTypeFormUrlEncoded() *Client {
+	c.ContentType(MimeTypeFormUrlEncoded)
 
 	return c
 }

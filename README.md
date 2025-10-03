@@ -62,6 +62,18 @@ client is reusable
 	response, err =client.Post("/people", payload).Send()
 	response, err =client.Put("/people/1", payload).Send()
 ```
+
+## Request Bodies
+Request body can be `io.Reader` or any value. If no marshaler found, JSON marshaler is used by default. You can also use
+following functions to create request body in the specific formats.
+
+```go
+    BodyString(body string)
+    BodyXml(body any)
+    BodyFormDataFromMap(body map[string]string)
+    BodyFormData(body map[string][]string)
+```
+
 ## Middlewares
 
 ```go

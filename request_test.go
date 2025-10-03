@@ -8,16 +8,17 @@ import (
 )
 
 type testModel struct {
-	Foo string `json:"foo"`
+	Foo string `json:"foo" xml:"foo"`
 }
 
-var testUrl = "https://localhost"
+var testUrl = "https://x.com"
 
 var (
 	TestUserName     = "test-user"
 	TestUserPassword = "test-password"
 	testData         = testModel{Foo: "bar"}
 	testDataAsJson   = `{"foo":"bar"}`
+	testDataAsXml    = `<testModel><foo>bar</foo></testModel>`
 )
 
 func (e *ClientSuite) Test_Headers() {

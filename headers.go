@@ -74,14 +74,14 @@ const (
 	MimeTypeCss        = "text/css"
 	MimeTypeJavascript = "text/javascript"
 	MimeTypeCsv        = "text/csv"
-	MimeTypeXml        = "text/xml"
+	MimeTypeTextXml    = "text/xml"
 	MimeTypeCalendar   = "text/calendar"
 
 	// Application types
 	MimeTypeJson              = "application/json"
-	MimeTypeXml2              = "application/xml"
+	MimeTypeApplicationXml    = "application/xml"
 	MimeTypeFormUrlEncoded    = "application/x-www-form-urlencoded"
-	MimeTypeMultipartFormData = "multipart/form-data"
+	MimeTypeMultipartFormData = "multipart/form-body"
 	MimeTypeOctetStream       = "application/octet-stream"
 	MimeTypePdf               = "application/pdf"
 	MimeTypeZip               = "application/zip"

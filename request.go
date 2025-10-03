@@ -63,32 +63,38 @@ func PatchCtx(ctx context.Context, url string, body any) *Req {
 }
 
 func getReq(ctx context.Context, url string, headers http.Header, queries netUrl.Values,
-	client *http.Client, path string) *Req {
+	client *http.Client, path string,
+) *Req {
 	return newRequest(ctx, http.MethodGet, url, nil, headers, queries, client, path)
 }
 
 func postReq(ctx context.Context, url string, body any, headers http.Header, queries netUrl.Values,
-	client *http.Client, path string) *Req {
+	client *http.Client, path string,
+) *Req {
 	return newRequest(ctx, http.MethodPost, url, body, headers, queries, client, path)
 }
 
 func deleteReq(ctx context.Context, url string, body any, headers http.Header, queries netUrl.Values,
-	client *http.Client, path string) *Req {
+	client *http.Client, path string,
+) *Req {
 	return newRequest(ctx, http.MethodDelete, url, body, headers, queries, client, path)
 }
 
 func putReq(ctx context.Context, url string, body any, headers http.Header, queries netUrl.Values,
-	client *http.Client, path string) *Req {
+	client *http.Client, path string,
+) *Req {
 	return newRequest(ctx, http.MethodPut, url, body, headers, queries, client, path)
 }
 
 func patchReq(ctx context.Context, url string, body any, headers http.Header, queries netUrl.Values,
-	client *http.Client, path string) *Req {
+	client *http.Client, path string,
+) *Req {
 	return newRequest(ctx, http.MethodPatch, url, body, headers, queries, client, path)
 }
 
 func newRequest(ctx context.Context, method, rawUrl string, body any, headers http.Header, queries netUrl.Values,
-	userClient *http.Client, basePath string) *Req {
+	userClient *http.Client, basePath string,
+) *Req {
 	reader, bodyCreationError := getBody(body)
 
 	// TODO change it to the google's function
@@ -150,6 +156,18 @@ func (r *Req) ContentTypeHtml() *Req {
 	return r
 }
 
+func (r *Req) ContentTypeXml() *Req {
+	r.ContentType(MimeTypeApplicationXml)
+
+	return r
+}
+
+func (r *Req) ContentTypeFormUrlEncoded() *Req {
+	r.ContentType(MimeTypeFormUrlEncoded)
+
+	return r
+}
+
 func (r *Req) ContentType(contentType string) *Req {
 	r.addHeader(HeaderContentType, contentType)
 
@@ -172,6 +190,7 @@ func (r *Req) AcceptJson() *Req {
 
 	return r
 }
+
 func (r *Req) UserAgent(userAgent string) *Req {
 	r.addHeader(HeaderUserAgent, userAgent)
 
@@ -385,6 +404,12 @@ func getBody(reqBody any) (io.Reader, error) {
 		switch v := reqBody.(type) {
 		case io.Reader:
 			body = v
+		case Requester:
+			reader, err := v.GetBody()
+			if err != nil {
+				return nil, err
+			}
+			body = reader
 		default:
 			bodyAsBytes, err := json.Marshal(reqBody)
 			if err != nil {

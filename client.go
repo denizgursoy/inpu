@@ -3,26 +3,26 @@ package inpu
 import (
 	"context"
 	"encoding/base64"
-	"maps"
+	"fmt"
 	"net/http"
+	"net/http/cookiejar"
 	netUrl "net/url"
 	"strconv"
 	"time"
 )
 
 type Client struct {
-	headers         http.Header
-	queries         netUrl.Values
-	userClient      *http.Client
-	timeOutDuration time.Duration
-	basePath        string
+	headers    http.Header
+	queries    netUrl.Values
+	userClient *http.Client
+	basePath   string
 }
 
 func New() *Client {
 	return &Client{
 		headers:    make(http.Header),
 		queries:    make(netUrl.Values),
-		userClient: &http.Client{},
+		userClient: getDefaultClient(),
 	}
 }
 
@@ -35,46 +35,47 @@ func NewWithHttpClient(client *http.Client) *Client {
 }
 
 func (c *Client) Get(url string) *Req {
-	return getReq(context.Background(), url, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
+	return getReq(context.Background(), url, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) GetCtx(ctx context.Context, url string) *Req {
-	return getReq(ctx, url, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
+	return getReq(ctx, url, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Post(url string, body any) *Req {
-	return postReq(context.Background(), url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
+	return postReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PostCtx(ctx context.Context, url string, body any) *Req {
-	return postReq(ctx, url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
+	return postReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Delete(url string, body any) *Req {
-	return deleteReq(context.Background(), url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
+	return deleteReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) DeleteCtx(ctx context.Context, url string, body any) *Req {
-	return deleteReq(ctx, url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
+	return deleteReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Put(url string, body any) *Req {
-	return putReq(context.Background(), url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
+	return putReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PutCtx(ctx context.Context, url string, body any) *Req {
-	return putReq(ctx, url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
+	return putReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Patch(url string, body any) *Req {
-	return patchReq(context.Background(), url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
+	return patchReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 func (c *Client) PatchCtx(ctx context.Context, url string, body any) *Req {
-	return patchReq(ctx, url, body, maps.Clone(c.headers), maps.Clone(c.queries), c.userClient, c.timeOutDuration, c.basePath)
+	return patchReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Header(key, val string) *Client {
 	c.addHeader(key, val)
+
 	return c
 }
 
@@ -94,6 +95,44 @@ func (c *Client) UseMiddlewares(mws ...Middleware) *Client {
 func (c *Client) setDefaultTransportIfEmpty() *Client {
 	if c.userClient.Transport == nil {
 		c.userClient.Transport = http.DefaultTransport
+	}
+
+	return c
+}
+
+func (c *Client) DisableRedirects() *Client {
+	c.configureRedirects(0)
+
+	return c
+}
+
+func (c *Client) FollowRedirects(maxRedirect int) *Client {
+	c.configureRedirects(maxRedirect)
+
+	return c
+}
+
+func (c *Client) configureRedirects(maxRedirect int) {
+	if maxRedirect <= 0 {
+		// Disable automatic redirects
+		c.userClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	} else {
+		// Custom redirect policy
+		c.userClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			if len(via) >= maxRedirect {
+				return fmt.Errorf("stopped after %d redirects", maxRedirect)
+			}
+			return nil
+		}
+	}
+}
+
+func (c *Client) EnableCookies() *Client {
+	if c.userClient.Jar == nil {
+		jar, _ := cookiejar.New(nil)
+		c.userClient.Jar = jar
 	}
 
 	return c
@@ -147,7 +186,7 @@ func (c *Client) AcceptJson() *Client {
 }
 
 func (c *Client) TimeOutIn(duration time.Duration) *Client {
-	c.timeOutDuration = duration
+	c.userClient.Timeout = duration
 
 	return c
 }

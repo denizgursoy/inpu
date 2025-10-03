@@ -62,3 +62,11 @@ client is reusable
 	response, err =client.Post("/people", payload).Send()
 	response, err =client.Put("/people/1", payload).Send()
 ```
+## Middlewares
+
+```go
+    RetryMiddleware(2) // retries twice in case of certain codes
+    LoggingMiddleware(true) // logs the request and responses
+    RequestIDMiddleware() // add request ID  header to all request
+    ErrorHandlerMiddleware(handler) // calls the handler in case of connection error
+```

@@ -1,28 +1,92 @@
 package inpu
 
 import (
+	"context"
 	"net/http"
+
+	"github.com/google/uuid"
 )
 
-// requestModifierTransport modifies the request only
-type requestModifierTransport struct {
-	next     http.RoundTripper
-	modifier RequestModifier
+type customMiddleware struct {
+	requestModifier  RequestModifier
+	responseModifier ResponseModifier
+	id               string
+	pr               int
 }
 
-// RequestModifierMiddleware creates a middleware that allows request to be modified
-func RequestModifierMiddleware(modifier RequestModifier) Middleware {
-	return func(next http.RoundTripper) http.RoundTripper {
-		return &requestModifierTransport{
-			next:     next,
-			modifier: modifier,
-		}
+// CustomMiddleware creates a logging middleware
+func newCustomMiddleware(requestModifier RequestModifier, responseModifier ResponseModifier, id string, pr int) Middleware {
+	return &customMiddleware{
+		requestModifier:  requestModifier,
+		responseModifier: responseModifier,
+		id:               id,
+		pr:               pr,
 	}
 }
 
-func (t *requestModifierTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// modify request
-	t.modifier(req)
+// RequestModifierMiddleware creates a middleware that allows request to be modified
+func RequestModifierMiddleware(modifier RequestModifier, id string, priority int) Middleware {
+	return newCustomMiddleware(modifier, nil, id, priority)
+}
+
+// ResponseModifierMiddleware creates a middleware that allows request to be modified
+func ResponseModifierMiddleware(modifier ResponseModifier, id string, priority int) Middleware {
+	return newCustomMiddleware(nil, modifier, id, priority)
+}
+
+// RequestIDMiddleware add HeaderXRequestID to every request
+func RequestIDMiddleware() Middleware {
+	return RequestModifierMiddleware(func(req *http.Request) {
+		requestID := uuid.New().String()
+		ctx := context.WithValue(req.Context(), "request_id", requestID)
+
+		req = req.WithContext(ctx)
+		req.Header.Set(HeaderXRequestID, requestID)
+	}, "request-id-middleware", 100)
+}
+
+// ErrorHandlerMiddleware handles server errors
+func ErrorHandlerMiddleware(handler ErrorHandler) Middleware {
+	return newCustomMiddleware(nil, func(response *http.Response, serverError error) (*http.Response, error) {
+		if serverError != nil {
+			return response, handler(serverError)
+		}
+
+		return response, nil
+	}, "error-handling-middleware", 100)
+}
+
+func (t *customMiddleware) ID() string {
+	return t.id
+}
+
+func (t *customMiddleware) Priority() int {
+	return t.pr
+}
+
+func (t *customMiddleware) Apply(next http.RoundTripper) http.RoundTripper {
+	return &customTransport{
+		next: next,
+		mv:   t,
+	}
+}
+
+type customTransport struct {
+	next http.RoundTripper
+	mv   *customMiddleware
+}
+
+func (t *customTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.mv.requestModifier != nil {
+		t.mv.requestModifier(req)
+	}
+
 	// Execute request
-	return t.next.RoundTrip(req)
+	resp, err := t.next.RoundTrip(req)
+	// modify response
+	if t.mv.responseModifier != nil {
+		return t.mv.responseModifier(resp, err)
+	}
+
+	return resp, err
 }

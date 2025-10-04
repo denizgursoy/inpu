@@ -8,6 +8,7 @@ import (
 	"net/http/cookiejar"
 	netUrl "net/url"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -16,6 +17,8 @@ type Client struct {
 	queries    netUrl.Values
 	userClient *http.Client
 	basePath   string
+	mws        map[string]Middleware
+	once       sync.Once
 }
 
 func New() *Client {
@@ -23,6 +26,7 @@ func New() *Client {
 		headers:    make(http.Header),
 		queries:    make(netUrl.Values),
 		userClient: getDefaultClient(),
+		mws:        make(map[string]Middleware),
 	}
 }
 
@@ -31,46 +35,57 @@ func NewWithHttpClient(client *http.Client) *Client {
 		headers:    make(http.Header),
 		queries:    make(netUrl.Values),
 		userClient: client,
+		mws:        make(map[string]Middleware),
 	}
 }
 
 func (c *Client) Get(url string) *Req {
+	c.prepareClient()
 	return getReq(context.Background(), url, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) GetCtx(ctx context.Context, url string) *Req {
+	c.prepareClient()
 	return getReq(ctx, url, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Post(url string, body any) *Req {
+	c.prepareClient()
 	return postReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PostCtx(ctx context.Context, url string, body any) *Req {
+	c.prepareClient()
 	return postReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Delete(url string, body any) *Req {
+	c.prepareClient()
 	return deleteReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) DeleteCtx(ctx context.Context, url string, body any) *Req {
+	c.prepareClient()
 	return deleteReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Put(url string, body any) *Req {
+	c.prepareClient()
 	return putReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PutCtx(ctx context.Context, url string, body any) *Req {
+	c.prepareClient()
 	return putReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Patch(url string, body any) *Req {
+	c.prepareClient()
 	return patchReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PatchCtx(ctx context.Context, url string, body any) *Req {
+	c.prepareClient()
 	return patchReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
@@ -81,12 +96,9 @@ func (c *Client) Header(key, val string) *Client {
 }
 
 func (c *Client) UseMiddlewares(mws ...Middleware) *Client {
-	c.setDefaultTransportIfEmpty()
-
 	for i := range mws {
-		middleware := mws[i]
-		if middleware != nil {
-			c.userClient.Transport = middleware(c.userClient.Transport)
+		if mws[i] != nil {
+			c.mws[mws[i].ID()] = mws[i]
 		}
 	}
 
@@ -388,6 +400,19 @@ func (c *Client) BasePath(basePath string) *Client {
 	c.basePath = basePath
 
 	return c
+}
+
+func (c *Client) prepareClient() {
+	c.once.Do(func() {
+		c.setDefaultTransportIfEmpty()
+
+		for i := range c.mws {
+			middleware := c.mws[i]
+			if middleware != nil {
+				c.userClient.Transport = middleware.Apply(c.userClient.Transport)
+			}
+		}
+	})
 }
 
 func getTokenHeaderValue(token string) string {

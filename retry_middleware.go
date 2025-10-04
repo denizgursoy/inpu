@@ -16,8 +16,7 @@ type RetryConfig struct {
 	RetryStatusCodes map[int]bool
 }
 
-type retryTransport struct {
-	next   http.RoundTripper
+type retryMiddleware struct {
 	config RetryConfig
 }
 
@@ -38,21 +37,38 @@ func RetryMiddleware(maxRetries int) Middleware {
 
 // RetryMiddlewareWithConfig creates a retry middleware with custom config
 func RetryMiddlewareWithConfig(config RetryConfig) Middleware {
-	return func(next http.RoundTripper) http.RoundTripper {
-		return &retryTransport{
-			next:   next,
-			config: config,
-		}
+	return &retryMiddleware{
+		config: config,
 	}
+}
+
+func (t *retryMiddleware) ID() string {
+	return "retry-middleware"
+}
+
+func (t *retryMiddleware) Priority() int {
+	return 2
+}
+
+func (t *retryMiddleware) Apply(next http.RoundTripper) http.RoundTripper {
+	return &retryTransport{
+		next: next,
+		mv:   t,
+	}
+}
+
+type retryTransport struct {
+	next http.RoundTripper
+	mv   *retryMiddleware
 }
 
 func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 	var err error
 
-	backoff := t.config.InitialBackoff
+	backoff := t.mv.config.InitialBackoff
 
-	for attempt := 0; attempt <= t.config.MaxRetries; attempt++ {
+	for attempt := 0; attempt <= t.mv.config.MaxRetries; attempt++ {
 		// Clone request for retry (important for body)
 		clonedReq := t.cloneRequest(req)
 
@@ -64,20 +80,20 @@ func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		}
 
 		// Don't sleep after last attempt
-		if attempt < t.config.MaxRetries {
+		if attempt < t.mv.config.MaxRetries {
 			// Check context cancellation
 			select {
 			case <-req.Context().Done():
 				return resp, req.Context().Err()
 			case <-time.After(backoff):
 				log.Printf("[RETRY] Attempt %d/%d for %s %s (waiting %v)",
-					attempt+1, t.config.MaxRetries, req.Method, req.URL, backoff)
+					attempt+1, t.mv.config.MaxRetries, req.Method, req.URL, backoff)
 			}
 
 			// Exponential backoff
-			backoff = time.Duration(float64(backoff) * t.config.BackoffMultiplier)
-			if backoff > t.config.MaxBackoff {
-				backoff = t.config.MaxBackoff
+			backoff = time.Duration(float64(backoff) * t.mv.config.BackoffMultiplier)
+			if backoff > t.mv.config.MaxBackoff {
+				backoff = t.mv.config.MaxBackoff
 			}
 		}
 	}
@@ -87,7 +103,7 @@ func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 func (t *retryTransport) shouldRetry(resp *http.Response, err error, attempt int) bool {
 	// No more retries left
-	if attempt >= t.config.MaxRetries {
+	if attempt >= t.mv.config.MaxRetries {
 		return false
 	}
 
@@ -97,7 +113,7 @@ func (t *retryTransport) shouldRetry(resp *http.Response, err error, attempt int
 	}
 
 	// Check if status code is retryable
-	if t.config.RetryStatusCodes[resp.StatusCode] {
+	if t.mv.config.RetryStatusCodes[resp.StatusCode] {
 		return true
 	}
 

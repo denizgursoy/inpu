@@ -8,20 +8,35 @@ import (
 	"time"
 )
 
-// LoggingMiddleware logs request and response details
-type loggingTransport struct {
-	next    http.RoundTripper
+type loggingMiddleware struct {
 	verbose bool
 }
 
 // LoggingMiddleware creates a logging middleware
 func LoggingMiddleware(verbose bool) Middleware {
-	return func(next http.RoundTripper) http.RoundTripper {
-		return &loggingTransport{
-			next:    next,
-			verbose: verbose,
-		}
+	return &loggingMiddleware{
+		verbose: verbose,
 	}
+}
+
+func (t *loggingMiddleware) ID() string {
+	return "default-logging-middleware"
+}
+
+func (t *loggingMiddleware) Priority() int {
+	return 1
+}
+
+func (t *loggingMiddleware) Apply(next http.RoundTripper) http.RoundTripper {
+	return &loggingTransport{
+		next: next,
+		mv:   t,
+	}
+}
+
+type loggingTransport struct {
+	next http.RoundTripper
+	mv   *loggingMiddleware
 }
 
 func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -30,7 +45,7 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	// Log request
 	log.Printf("→ [%s] %s", req.Method, req.URL.String())
 
-	if t.verbose {
+	if t.mv.verbose {
 		log.Printf("  Headers: %v", req.Header)
 		if req.Body != nil {
 			body, _ := io.ReadAll(req.Body)
@@ -53,7 +68,7 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	log.Printf("← [%s] %s - Status: %d - Duration: %v",
 		req.Method, req.URL.String(), resp.StatusCode, duration)
 
-	if t.verbose {
+	if t.mv.verbose {
 		log.Printf("  Response Headers: %v", resp.Header)
 		if resp.Body != nil {
 			body, _ := io.ReadAll(resp.Body)

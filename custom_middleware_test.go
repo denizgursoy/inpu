@@ -1,6 +1,7 @@
 package inpu
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/h2non/gock"
@@ -24,7 +25,7 @@ func (e *ClientSuite) Test_RequestModifierMiddleware() {
 			query := request.URL.Query()
 			query.Add("foo1", "bar1")
 			request.URL.RawQuery = query.Encode()
-		}))
+		}, "test-middleware", 99))
 
 	response, err := client.
 		Get(testUrl).
@@ -34,4 +35,37 @@ func (e *ClientSuite) Test_RequestModifierMiddleware() {
 
 	e.Require().NoError(err)
 	e.Require().Equal(http.StatusOK, response.Status())
+}
+
+func (e *ClientSuite) Test_RequestIDMiddleware() {
+	gock.New(testUrl).
+		Get("/").
+		HeaderPresent(HeaderXRequestID).
+		Reply(http.StatusOK)
+
+	response, err := New().
+		UseMiddlewares(RequestIDMiddleware()).
+		Get(testUrl).
+		Send()
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
+}
+
+func (e *ClientSuite) Test_ErrorHandlerMiddleware() {
+	httpError := errors.New("something happened")
+	processedError := errors.New("error is processed")
+	gock.New(testUrl).
+		Get("/").
+		ReplyError(httpError)
+
+	response, err := New().
+		UseMiddlewares(ErrorHandlerMiddleware(func(err error) error {
+			return errors.Join(processedError, httpError)
+		})).
+		Get(testUrl).
+		Send()
+
+	e.Require().ErrorIs(err, processedError)
+	e.Require().Nil(response)
 }

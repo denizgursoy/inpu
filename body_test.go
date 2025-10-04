@@ -41,3 +41,29 @@ func (e *ClientSuite) Test_Body_BodyFormDataFromMap() {
 	e.Require().NoError(err)
 	e.Require().Equal(http.StatusOK, response.Status())
 }
+
+func (e *ClientSuite) Test_Body_String() {
+	gock.New(testUrl).
+		Post("/").
+		BodyString("^foo$").
+		Reply(http.StatusOK)
+
+	response, err := Post(testUrl, BodyString("foo")).
+		Send()
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
+}
+
+func (e *ClientSuite) Test_Body_Xml_Marshal() {
+	gock.New(testUrl).
+		Post("/").
+		BodyString(testDataAsXml).
+		Reply(http.StatusOK)
+
+	response, err := Post(testUrl, BodyXml(testData)).
+		Send()
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
+}

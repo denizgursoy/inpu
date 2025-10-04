@@ -10,28 +10,30 @@ import (
 type customMiddleware struct {
 	requestModifier  RequestModifier
 	responseModifier ResponseModifier
-	id               string
-	pr               int
+	middlewareID     string
+	priority         int
 }
 
 // CustomMiddleware creates a logging middleware
-func newCustomMiddleware(requestModifier RequestModifier, responseModifier ResponseModifier, id string, pr int) Middleware {
+func newCustomMiddleware(requestModifier RequestModifier, responseModifier ResponseModifier,
+	middlewareID string, priority int,
+) Middleware {
 	return &customMiddleware{
 		requestModifier:  requestModifier,
 		responseModifier: responseModifier,
-		id:               id,
-		pr:               pr,
+		middlewareID:     middlewareID,
+		priority:         priority,
 	}
 }
 
 // RequestModifierMiddleware creates a middleware that allows request to be modified
-func RequestModifierMiddleware(modifier RequestModifier, id string, priority int) Middleware {
-	return newCustomMiddleware(modifier, nil, id, priority)
+func RequestModifierMiddleware(modifier RequestModifier, middlewareID string, priority int) Middleware {
+	return newCustomMiddleware(modifier, nil, middlewareID, priority)
 }
 
 // ResponseModifierMiddleware creates a middleware that allows request to be modified
-func ResponseModifierMiddleware(modifier ResponseModifier, id string, priority int) Middleware {
-	return newCustomMiddleware(nil, modifier, id, priority)
+func ResponseModifierMiddleware(modifier ResponseModifier, middlewareID string, priority int) Middleware {
+	return newCustomMiddleware(nil, modifier, middlewareID, priority)
 }
 
 // RequestIDMiddleware add HeaderXRequestID to every request
@@ -42,7 +44,7 @@ func RequestIDMiddleware() Middleware {
 
 		req = req.WithContext(ctx)
 		req.Header.Set(HeaderXRequestID, requestID)
-	}, "request-id-middleware", 100)
+	}, "request-middlewareID-middleware", 100)
 }
 
 // ErrorHandlerMiddleware handles server errors
@@ -57,11 +59,11 @@ func ErrorHandlerMiddleware(handler ErrorHandler) Middleware {
 }
 
 func (t *customMiddleware) ID() string {
-	return t.id
+	return t.middlewareID
 }
 
 func (t *customMiddleware) Priority() int {
-	return t.pr
+	return t.priority
 }
 
 func (t *customMiddleware) Apply(next http.RoundTripper) http.RoundTripper {

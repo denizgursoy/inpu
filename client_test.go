@@ -91,6 +91,26 @@ func (e *ClientSuite) Test_Client_BasePath() {
 	e.Require().Equal(http.StatusOK, response.Status())
 }
 
+func (e *ClientSuite) Test_Client_Empty_BasePath() {
+	// should get the headers and queries from the client
+	gock.New("").
+		Get("^/people/1$").
+		MatchParam("is_created", "^true$").
+		MatchParam("foo", "^bar$").
+		Reply(http.StatusOK)
+
+	client := New().
+		QueryBool("is_created", true)
+
+	response, err := client.
+		Get("/people/1").
+		QueryString("foo", "bar").
+		Send()
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
+}
+
 func (e *ClientSuite) Test_Client_Empty_Uri() {
 	// should get the headers and queries from the client
 	gock.New(testUrl).

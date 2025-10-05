@@ -44,7 +44,7 @@ func RequestIDMiddleware() Middleware {
 
 		req = req.WithContext(ctx)
 		req.Header.Set(HeaderXRequestID, requestID)
-	}, "request-middlewareID-middleware", 100)
+	}, "request-modifier-middleware", 100)
 }
 
 // ErrorHandlerMiddleware handles server errors

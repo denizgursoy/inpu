@@ -73,12 +73,82 @@ func (e *ClientSuite) Test_Client_Timeout() {
 func (e *ClientSuite) Test_Client_BasePath() {
 	// should get the headers and queries from the client
 	gock.New(testUrl).
-		Get("/").
+		Get("^/people/1$").
+		MatchParam("is_created", "^true$").
+		MatchParam("foo", "^bar$").
 		Reply(http.StatusOK)
 
-	client := New().BasePath(testUrl)
+	client := New().
+		BasePath(testUrl).
+		QueryBool("is_created", true)
 
-	response, err := client.Get("/").Send()
+	response, err := client.
+		Get("/people/1").
+		QueryString("foo", "bar").
+		Send()
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
+}
+
+func (e *ClientSuite) Test_Client_Empty_Uri() {
+	// should get the headers and queries from the client
+	gock.New(testUrl).
+		Get("").
+		MatchParam("is_created", "^true$").
+		MatchParam("foo", "^bar$").
+		Reply(http.StatusOK)
+
+	client := New().
+		BasePath(testUrl).
+		QueryBool("is_created", true)
+
+	response, err := client.
+		Get("").
+		QueryString("foo", "bar").
+		Send()
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
+}
+
+func (e *ClientSuite) Test_Client_No_Duplicate_Slash() {
+	// should get the headers and queries from the client
+	gock.New(testUrl).
+		Get("/").
+		MatchParam("is_created", "^true$").
+		MatchParam("foo", "^bar$").
+		Reply(http.StatusOK)
+
+	client := New().
+		BasePath(testUrl+"/").
+		QueryBool("is_created", true)
+
+	response, err := client.
+		Get("/").
+		QueryString("foo", "bar").
+		Send()
+
+	e.Require().NoError(err)
+	e.Require().Equal(http.StatusOK, response.Status())
+}
+
+func (e *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
+	// should get the headers and queries from the client
+	gock.New(testUrl).
+		Get("^/test$").
+		MatchParam("is_created", "^true$").
+		MatchParam("foo", "^bar$").
+		Reply(http.StatusOK)
+
+	client := New().
+		BasePath(testUrl+"/people/1/subscription/23").
+		QueryBool("is_created", true)
+
+	response, err := client.
+		Get("/../../../../../../test").
+		QueryString("foo", "bar").
+		Send()
 
 	e.Require().NoError(err)
 	e.Require().Equal(http.StatusOK, response.Status())

@@ -37,6 +37,23 @@ func (e *ClientSuite) Test_RequestModifierMiddleware() {
 	e.Require().Equal(http.StatusOK, response.Status())
 }
 
+func (e *ClientSuite) Test_IgnoreNilMiddleware() {
+	gock.New(testUrl).
+		Get("/").
+		HeaderPresent(HeaderXRequestID).
+		Reply(http.StatusOK)
+
+	client := New().
+		UseMiddlewares(nil, RequestIDMiddleware(), nil)
+	response, err := client.
+		Get(testUrl).
+		Send()
+
+	e.Require().NoError(err)
+	e.Require().Len(client.mws, 1)
+	e.Require().Equal(http.StatusOK, response.Status())
+}
+
 func (e *ClientSuite) Test_RequestIDMiddleware() {
 	gock.New(testUrl).
 		Get("/").

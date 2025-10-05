@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,7 +17,6 @@ type Req struct {
 	userClient           *http.Client
 	httpReq              *http.Request
 	requestCreationError error
-	bodyCreationError    error
 	timeOut              time.Duration
 }
 
@@ -92,26 +90,31 @@ func patchReq(ctx context.Context, url string, body any, headers http.Header, qu
 	return newRequest(ctx, http.MethodPatch, url, body, headers, queries, client, path)
 }
 
-func newRequest(ctx context.Context, method, rawUrl string, body any, headers http.Header, queries netUrl.Values,
+func newRequest(ctx context.Context, method, path string, body any, headers http.Header, queries netUrl.Values,
 	userClient *http.Client, basePath string,
 ) *Req {
-	reader, bodyCreationError := getBody(body)
-
-	// TODO change it to the google's function
-	path := rawUrl
-	if len(strings.TrimSpace(basePath)) > 0 {
-		path = basePath + rawUrl
+	bodyAsReader, err := getBody(body)
+	if err != nil {
+		return newInvalidRequest(fmt.Errorf("%w: %w", ErrInvalidBody, err))
 	}
-	httpReq, requestCreationError := http.NewRequestWithContext(ctx, method, path, reader)
-	isSuccessful := requestCreationError == nil && bodyCreationError == nil
-	if headers != nil && isSuccessful {
+	url, err := getUrl(basePath, path)
+	if err != nil {
+		return newInvalidRequest(err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, method, url.String(), bodyAsReader)
+	if err != nil {
+		return newInvalidRequest(fmt.Errorf("%w: %w", ErrRequestCreationFailed, err))
+	}
+
+	if headers != nil && len(headers) > 0 {
 		for k, v := range headers {
 			for _, v1 := range v {
 				httpReq.Header.Add(k, v1)
 			}
 		}
 	}
-	if queries != nil && isSuccessful {
+	if queries != nil && len(queries) > 0 {
 		query := httpReq.URL.Query()
 		for k, v := range queries {
 			for _, v1 := range v {
@@ -122,15 +125,37 @@ func newRequest(ctx context.Context, method, rawUrl string, body any, headers ht
 	}
 
 	return &Req{
-		userClient:           userClient,
-		requestCreationError: requestCreationError,
-		bodyCreationError:    bodyCreationError,
-		httpReq:              httpReq,
+		userClient: userClient,
+		httpReq:    httpReq,
 	}
 }
 
+func newInvalidRequest(err error) *Req {
+	return &Req{
+		requestCreationError: err,
+	}
+}
+
+func getUrl(basePath, path string) (*netUrl.URL, error) {
+	ref, err := netUrl.Parse(path)
+	if err != nil {
+		return ref, fmt.Errorf("%w: %w", ErrCouldNotParsePath, err)
+	}
+
+	if len(strings.TrimSpace(basePath)) > 0 {
+		base, err := netUrl.Parse(basePath)
+		if err != nil {
+			return base, fmt.Errorf("%w: %w", ErrCouldNotParseBaseUrl, err)
+		}
+
+		return base.ResolveReference(ref), nil
+	}
+
+	return ref, nil
+}
+
 func (r *Req) isSuccessfullyCreated() bool {
-	return r.requestCreationError == nil && r.bodyCreationError == nil
+	return r.requestCreationError == nil
 }
 
 func (r *Req) Header(key, val string) *Req {
@@ -377,7 +402,7 @@ func (r *Req) TimeOutIn(duration time.Duration) *Req {
 
 func (r *Req) Send() (*Response, error) {
 	if !r.isSuccessfullyCreated() {
-		return nil, errors.Join(r.requestCreationError, r.bodyCreationError)
+		return nil, r.requestCreationError
 	}
 	client := getDefaultClient()
 	if r.userClient != nil {
@@ -392,7 +417,7 @@ func (r *Req) Send() (*Response, error) {
 
 	httpResponse, err := client.Do(r.httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("could not send the request: %w,%w", ErrConnectionFailed, err)
+		return nil, fmt.Errorf("%w,%w", ErrConnectionFailed, err)
 	}
 
 	return newResponse(httpResponse), nil

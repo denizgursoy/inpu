@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	netUrl "net/url"
+	"slices"
 	"strconv"
 	"sync"
 	"time"
@@ -41,26 +42,31 @@ func NewWithHttpClient(client *http.Client) *Client {
 
 func (c *Client) Get(url string) *Req {
 	c.prepareClient()
+
 	return getReq(context.Background(), url, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) GetCtx(ctx context.Context, url string) *Req {
 	c.prepareClient()
+
 	return getReq(ctx, url, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Post(url string, body any) *Req {
 	c.prepareClient()
+
 	return postReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PostCtx(ctx context.Context, url string, body any) *Req {
 	c.prepareClient()
+
 	return postReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Delete(url string, body any) *Req {
 	c.prepareClient()
+
 	return deleteReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
@@ -71,21 +77,25 @@ func (c *Client) DeleteCtx(ctx context.Context, url string, body any) *Req {
 
 func (c *Client) Put(url string, body any) *Req {
 	c.prepareClient()
+
 	return putReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PutCtx(ctx context.Context, url string, body any) *Req {
 	c.prepareClient()
+
 	return putReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Patch(url string, body any) *Req {
 	c.prepareClient()
+
 	return patchReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PatchCtx(ctx context.Context, url string, body any) *Req {
 	c.prepareClient()
+
 	return patchReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
@@ -405,14 +415,24 @@ func (c *Client) BasePath(basePath string) *Client {
 func (c *Client) prepareClient() {
 	c.once.Do(func() {
 		c.setDefaultTransportIfEmpty()
+		mvsSlice := c.convertMvsToSlice()
+		slices.SortFunc(mvsSlice, func(a, b Middleware) int {
+			return a.Priority() - b.Priority()
+		})
 
-		for i := range c.mws {
-			middleware := c.mws[i]
-			if middleware != nil {
-				c.userClient.Transport = middleware.Apply(c.userClient.Transport)
-			}
+		for i := range mvsSlice {
+			c.userClient.Transport = mvsSlice[i].Apply(c.userClient.Transport)
 		}
 	})
+}
+
+func (c *Client) convertMvsToSlice() []Middleware {
+	mws := make([]Middleware, 0)
+	for _, v := range c.mws {
+		mws = append(mws, v)
+	}
+
+	return mws
 }
 
 func getTokenHeaderValue(token string) string {

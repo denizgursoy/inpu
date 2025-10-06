@@ -36,6 +36,7 @@ func main() {
 		OnReply(inpu.StatusAnyExcept(http.StatusBadRequest), inpu.UnmarshalJson(&filteredTodos)).
 		OnReply(inpu.StatusAnyExceptOneOf(http.StatusMultipleChoices, http.StatusBadRequest), inpu.UnmarshalJson(&filteredTodos)).
 		Send()
+
 	for i := range filteredTodos {
 		fmt.Println(i+1, "-", filteredTodos[i].Title)
 	}

@@ -41,60 +41,60 @@ func NewWithHttpClient(client *http.Client) *Client {
 }
 
 func (c *Client) Get(url string) *Req {
-	c.prepareClient()
+	c.prepareClientOnce()
 
 	return getReq(context.Background(), url, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) GetCtx(ctx context.Context, url string) *Req {
-	c.prepareClient()
+	c.prepareClientOnce()
 
 	return getReq(ctx, url, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Post(url string, body any) *Req {
-	c.prepareClient()
+	c.prepareClientOnce()
 
 	return postReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PostCtx(ctx context.Context, url string, body any) *Req {
-	c.prepareClient()
+	c.prepareClientOnce()
 
 	return postReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Delete(url string, body any) *Req {
-	c.prepareClient()
+	c.prepareClientOnce()
 
 	return deleteReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) DeleteCtx(ctx context.Context, url string, body any) *Req {
-	c.prepareClient()
+	c.prepareClientOnce()
 	return deleteReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Put(url string, body any) *Req {
-	c.prepareClient()
+	c.prepareClientOnce()
 
 	return putReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PutCtx(ctx context.Context, url string, body any) *Req {
-	c.prepareClient()
+	c.prepareClientOnce()
 
 	return putReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) Patch(url string, body any) *Req {
-	c.prepareClient()
+	c.prepareClientOnce()
 
 	return patchReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PatchCtx(ctx context.Context, url string, body any) *Req {
-	c.prepareClient()
+	c.prepareClientOnce()
 
 	return patchReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
@@ -412,7 +412,7 @@ func (c *Client) BasePath(basePath string) *Client {
 	return c
 }
 
-func (c *Client) prepareClient() {
+func (c *Client) prepareClientOnce() {
 	c.once.Do(func() {
 		c.setDefaultTransportIfEmpty()
 		mvsSlice := c.convertMvsToSlice()

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/denizgursoy/inpu"
@@ -22,10 +23,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	filteredTodos := make([]ToDo, 0)
 	if response.IsSuccess() {
+		filteredTodos := make([]ToDo, 0)
 		if err := response.UnmarshalJson(&filteredTodos); err != nil {
 			log.Fatal(err)
+		}
+		for i := range filteredTodos {
+			fmt.Println(i+1, "-", filteredTodos[i].Title)
 		}
 	} else if response.IsServerError() {
 		log.Fatal("server failed")

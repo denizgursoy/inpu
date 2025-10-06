@@ -7,60 +7,72 @@ import (
 	"slices"
 )
 
-type Response struct {
-	r *http.Response
+type statusMatcher func(statusCode int) bool
+type processor func(r *http.Response) error
+
+func StatusAny(statusCode int) bool {
+	return true
 }
 
-func newResponse(r *http.Response) *Response {
-	return &Response{
-		r: r,
+func StatusAnyExcept(statusCode int) func(actualStatus int) bool {
+	return func(actualStatus int) bool {
+		return statusCode != actualStatus
 	}
 }
 
-func (r *Response) IsSuccess() bool {
-	return r.r.StatusCode >= 200 && r.r.StatusCode < 300
-}
-
-func (r *Response) IsInformational() bool {
-	return r.r.StatusCode < 200
-}
-
-func (r *Response) IsRedirection() bool {
-	return r.r.StatusCode >= 300 && r.r.StatusCode < 400
-}
-
-func (r *Response) IsClientError() bool {
-	return r.r.StatusCode >= 400 && r.r.StatusCode < 500
-}
-
-func (r *Response) IsServerError() bool {
-	return r.r.StatusCode >= 500
-}
-
-func (r *Response) Is(statusCode int) bool {
-	return r.r.StatusCode == statusCode
-}
-
-func (r *Response) Status() int {
-	return r.r.StatusCode
-}
-
-func (r *Response) HttpResponse() *http.Response {
-	return r.r
-}
-
-func (r *Response) IsOneOf(statusCodes ...int) bool {
-	return slices.Contains(statusCodes, r.Status())
-}
-
-func (r *Response) UnmarshalJson(t any) error {
-	if t == nil {
-		return ErrMarshalToNil
+func StatusAnyExceptOneOf(statusCodes ...int) func(actualStatus int) bool {
+	return func(statusCode int) bool {
+		return !slices.Contains(statusCodes, statusCode)
 	}
+}
 
-	if reflect.ValueOf(t).Kind() != reflect.Ptr {
-		return ErrNotPointerParameter
+func StatusIsSuccess(statusCode int) bool {
+	return statusCode >= 200 && statusCode < 300
+}
+func StatusIsInformational(statusCode int) bool {
+	return statusCode < 200
+}
+
+func StatusIsRedirection(statusCode int) bool {
+	return statusCode >= 300 && statusCode < 400
+}
+
+func StatusIsClientError(statusCode int) bool {
+	return statusCode >= 400 && statusCode < 500
+}
+
+func StatusIsServerError(statusCode int) bool {
+	return statusCode >= 500
+}
+
+func StatusIsOneOf(statusCodes ...int) func(statusCode int) bool {
+	return func(statusCode int) bool {
+		return slices.Contains(statusCodes, statusCode)
 	}
+}
 
-	return json.NewDecoder(r.r.Body).Decode(t)
+func StatusIs(expectedStatus int) func(statusCode int) bool {
+	return func(actualStatus int) bool {
+		return expectedStatus == actualStatus
+	}
+}
+
+func UnmarshalJson(t any) func(r *http.Response) error {
+	return func(r *http.Response) error {
+		if t == nil {
+			return ErrMarshalToNil
+		}
+
+		if reflect.ValueOf(t).Kind() != reflect.Ptr {
+			return ErrNotPointerParameter
+		}
+
+		return json.NewDecoder(r.Body).Decode(t)
+	}
+}
+
+func ReturnError(err error) func(r *http.Response) error {
+	return func(_ *http.Response) error {
+		return err
+	}
 }

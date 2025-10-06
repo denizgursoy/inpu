@@ -27,14 +27,14 @@ func (e *ClientSuite) Test_RequestModifierMiddleware() {
 			request.URL.RawQuery = query.Encode()
 		}, "test-middleware", 99))
 
-	response, err := client.
+	err := client.
 		Get(testUrl).
 		Query("foo2", "bar2").
 		Header("foo3", "bar3").
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_IgnoreNilMiddleware() {
@@ -45,13 +45,13 @@ func (e *ClientSuite) Test_IgnoreNilMiddleware() {
 
 	client := New().
 		UseMiddlewares(nil, RequestIDMiddleware(), nil)
-	response, err := client.
+	err := client.
 		Get(testUrl).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
 	e.Require().Len(client.mws, 1)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_RequestIDMiddleware() {
@@ -60,13 +60,13 @@ func (e *ClientSuite) Test_RequestIDMiddleware() {
 		HeaderPresent(HeaderXRequestID).
 		Reply(http.StatusOK)
 
-	response, err := New().
+	err := New().
 		UseMiddlewares(RequestIDMiddleware()).
 		Get(testUrl).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_ErrorHandlerMiddleware() {
@@ -76,13 +76,13 @@ func (e *ClientSuite) Test_ErrorHandlerMiddleware() {
 		Get("/").
 		ReplyError(httpError)
 
-	response, err := New().
+	err := New().
 		UseMiddlewares(ErrorHandlerMiddleware(func(err error) error {
 			return errors.Join(processedError, httpError)
 		})).
 		Get(testUrl).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().ErrorIs(err, processedError)
-	e.Require().Nil(response)
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/denizgursoy/inpu"
 )
@@ -23,25 +24,20 @@ func main() {
 		BasePath("https://jsonplaceholder.typicode.com").
 		UseMiddlewares(inpu.LoggingMiddleware(true))
 
-	response, err := client.Get("/todos").
+	filteredTodos := make([]ToDo, 0)
+	err := client.Get("/todos").
 		QueryBool("completed", true).
 		QueryInt("userId", 2).
+		OnReply(inpu.StatusIs(http.StatusCreated), inpu.ReturnError(inpu.ErrConnectionFailed)).
+		OnReply(inpu.StatusIsOneOf(http.StatusMovedPermanently, http.StatusAccepted), inpu.UnmarshalJson(filteredTodos)).
+		OnReply(inpu.StatusIsSuccess, inpu.UnmarshalJson(&filteredTodos)).
+		OnReply(inpu.StatusIs(http.StatusOK), inpu.UnmarshalJson(&filteredTodos)).
+		OnReply(inpu.StatusAny, inpu.UnmarshalJson(&filteredTodos)).
+		OnReply(inpu.StatusAnyExcept(http.StatusBadRequest), inpu.UnmarshalJson(&filteredTodos)).
+		OnReply(inpu.StatusAnyExceptOneOf(http.StatusMultipleChoices, http.StatusBadRequest), inpu.UnmarshalJson(&filteredTodos)).
 		Send()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if response.IsSuccess() {
-		filteredTodos := make([]ToDo, 0)
-		if err := response.UnmarshalJson(&filteredTodos); err != nil {
-			log.Fatal(err)
-		}
-		for i := range filteredTodos {
-			fmt.Println(i+1, "-", filteredTodos[i].Title)
-		}
-	} else if response.IsServerError() {
-		log.Fatal("server failed")
+	for i := range filteredTodos {
+		fmt.Println(i+1, "-", filteredTodos[i].Title)
 	}
 
 	newTodo := ToDo{
@@ -49,15 +45,11 @@ func main() {
 		Title:     "",
 		Completed: true,
 	}
-	send, err := client.Post("/todos", newTodo).Send()
+	err = client.
+		Post("/todos", newTodo).
+		OnReply(inpu.StatusIsSuccess, inpu.UnmarshalJson(&newTodo)).
+		Send()
 	if err != nil {
 		log.Fatal(err)
-	}
-	if send.IsSuccess() {
-		newTodo := CreatedTodo{}
-		if err := send.UnmarshalJson(&newTodo); err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println("created with id", newTodo.ID)
 	}
 }

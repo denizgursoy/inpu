@@ -1,6 +1,7 @@
 package inpu
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/h2non/gock"
@@ -31,8 +32,9 @@ func (e *ClientSuite) Test_Client_MiddlewareOrders() {
 			RetryMiddleware(3),
 			RequestIDMiddleware())
 
-	response, err := client.Get("/").Send()
+	err := client.Get("/").
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }

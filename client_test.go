@@ -2,6 +2,7 @@ package inpu
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -30,10 +31,11 @@ func (e *ClientSuite) Test_Client() {
 		QueryFloat64("float64", 2.2).
 		QueryInt("int", 1)
 
-	response, err := client.Get(testUrl).Send()
+	err := client.Get(testUrl).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 
 	// TODO check the mock after changing the post path
 	gock.New(testUrl).
@@ -48,9 +50,10 @@ func (e *ClientSuite) Test_Client() {
 		BodyString(testDataAsJson).
 		Reply(http.StatusCreated)
 
-	response, err = client.Post(testUrl, testData).Send()
+	err = client.Post(testUrl, testData).
+		OnReply(StatusAnyExcept(http.StatusCreated), ReturnError(errors.New("unexpected status"))).
+		Send()
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusCreated, response.Status())
 }
 
 func (e *ClientSuite) Test_Client_Timeout() {
@@ -58,14 +61,16 @@ func (e *ClientSuite) Test_Client_Timeout() {
 	gock.New(testUrl).
 		Get("/").
 		Map(func(req *http.Request) *http.Request {
-			time.Sleep(1 * time.Second)
+			time.Sleep(300 * time.Millisecond)
 			return req
 		}).
 		Reply(http.StatusOK)
 
-	client := New().TimeOutIn(500 * time.Millisecond)
+	client := New().TimeOutIn(200 * time.Millisecond)
 
-	_, err := client.Get(testUrl).Send()
+	err := client.Get(testUrl).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		Send()
 
 	e.Require().ErrorIs(err, context.DeadlineExceeded)
 }
@@ -82,13 +87,13 @@ func (e *ClientSuite) Test_Client_BasePath() {
 		BasePath(testUrl).
 		QueryBool("is_created", true)
 
-	response, err := client.
+	err := client.
 		Get("/people/1").
 		Query("foo", "bar").
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_Client_Empty_BasePath() {
@@ -102,13 +107,13 @@ func (e *ClientSuite) Test_Client_Empty_BasePath() {
 	client := New().
 		QueryBool("is_created", true)
 
-	response, err := client.
+	err := client.
 		Get("/people/1").
 		Query("foo", "bar").
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_Client_Empty_Uri() {
@@ -123,13 +128,13 @@ func (e *ClientSuite) Test_Client_Empty_Uri() {
 		BasePath(testUrl).
 		QueryBool("is_created", true)
 
-	response, err := client.
+	err := client.
 		Get("").
 		Query("foo", "bar").
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_Client_No_Duplicate_Slash() {
@@ -144,13 +149,13 @@ func (e *ClientSuite) Test_Client_No_Duplicate_Slash() {
 		BasePath(testUrl+"/").
 		QueryBool("is_created", true)
 
-	response, err := client.
+	err := client.
 		Get("/").
 		Query("foo", "bar").
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
@@ -165,11 +170,11 @@ func (e *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
 		BasePath(testUrl+"/people/1/subscription/23").
 		QueryBool("is_created", true)
 
-	response, err := client.
+	err := client.
 		Get("/../../../../../../test").
 		Query("foo", "bar").
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }

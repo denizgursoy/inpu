@@ -2,6 +2,7 @@ package inpu
 
 import (
 	"bytes"
+	"errors"
 	"net/http"
 
 	"github.com/h2non/gock"
@@ -28,13 +29,13 @@ func (e *ClientSuite) Test_Headers() {
 		MatchHeader(HeaderAccept, MimeTypeJson).
 		Reply(http.StatusOK)
 
-	response, err := Get(testUrl).
+	err := Get(testUrl).
 		AcceptJson().
 		ContentTypeJson().
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_Basic_Authentication() {
@@ -43,12 +44,12 @@ func (e *ClientSuite) Test_Basic_Authentication() {
 		BasicAuth(TestUserName, TestUserPassword).
 		Reply(http.StatusOK)
 
-	response, err := Get(testUrl).
+	err := Get(testUrl).
 		AuthBasic(TestUserName, TestUserPassword).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_Token_Authentication() {
@@ -58,12 +59,12 @@ func (e *ClientSuite) Test_Token_Authentication() {
 		MatchHeader(HeaderAuthorization, "Bearer "+token).
 		Reply(http.StatusOK)
 
-	response, err := Get(testUrl).
+	err := Get(testUrl).
 		AuthToken(token).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_Query_Parameters() {
@@ -76,16 +77,16 @@ func (e *ClientSuite) Test_Query_Parameters() {
 		MatchParam("int", "1").
 		Reply(http.StatusOK)
 
-	response, err := Get(testUrl).
+	err := Get(testUrl).
 		QueryBool("is_created", true).
 		Query("foo", "bar").
 		QueryFloat32("float", 1.2).
 		QueryFloat64("float64", 2.2).
 		QueryInt("int", 1).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_Multiple_Query_Parameters() {
@@ -96,13 +97,14 @@ func (e *ClientSuite) Test_Multiple_Query_Parameters() {
 		MatchParam("foo", "bar2").
 		Reply(http.StatusOK)
 
-	response, err := Get(testUrl).
+	err := Get(testUrl).
 		Query("foo", "bar1").
 		Query("foo", "bar2").
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
+
 }
 
 func (e *ClientSuite) Test_Body_Json_Marshal() {
@@ -111,11 +113,11 @@ func (e *ClientSuite) Test_Body_Json_Marshal() {
 		BodyString(testDataAsJson).
 		Reply(http.StatusOK)
 
-	response, err := Post(testUrl, testData).
+	err := Post(testUrl, testData).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_Body_Reader() {
@@ -124,9 +126,9 @@ func (e *ClientSuite) Test_Body_Reader() {
 		BodyString(testDataAsJson).
 		Reply(http.StatusOK)
 
-	response, err := Post(testUrl, bytes.NewReader([]byte(testDataAsJson))).
+	err := Post(testUrl, bytes.NewReader([]byte(testDataAsJson))).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }

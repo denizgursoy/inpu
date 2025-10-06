@@ -1,6 +1,7 @@
 package inpu
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/h2non/gock"
@@ -17,11 +18,11 @@ func (e *ClientSuite) Test_Body_BodyFormDataFromUrl() {
 		"foo":   {"bar"},
 		"foo1":  {"bar1"},
 	}
-	response, err := Post(testUrl, BodyFormData(data)).
+	err := Post(testUrl, BodyFormData(data)).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_Body_BodyFormDataFromMap() {
@@ -35,11 +36,11 @@ func (e *ClientSuite) Test_Body_BodyFormDataFromMap() {
 		"foo":   "bar",
 		"foo1":  "bar1",
 	}
-	response, err := Post(testUrl, BodyFormDataFromMap(data)).
+	err := Post(testUrl, BodyFormDataFromMap(data)).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_Body_String() {
@@ -48,11 +49,11 @@ func (e *ClientSuite) Test_Body_String() {
 		BodyString("^foo$").
 		Reply(http.StatusOK)
 
-	response, err := Post(testUrl, BodyString("foo")).
+	err := Post(testUrl, BodyString("foo")).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }
 
 func (e *ClientSuite) Test_Body_Xml_Marshal() {
@@ -61,9 +62,9 @@ func (e *ClientSuite) Test_Body_Xml_Marshal() {
 		BodyString(testDataAsXml).
 		Reply(http.StatusOK)
 
-	response, err := Post(testUrl, BodyXml(testData)).
+	err := Post(testUrl, BodyXml(testData)).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	e.Require().NoError(err)
-	e.Require().Equal(http.StatusOK, response.Status())
 }

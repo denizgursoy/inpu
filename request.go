@@ -13,11 +13,17 @@ import (
 	"time"
 )
 
+type replyBehavior struct {
+	statusMatcher statusMatcher
+	processor     processor
+}
+
 type Req struct {
 	userClient           *http.Client
 	httpReq              *http.Request
 	requestCreationError error
 	timeOut              time.Duration
+	replies              []replyBehavior
 }
 
 func Get(url string) *Req {
@@ -400,9 +406,18 @@ func (r *Req) TimeOutIn(duration time.Duration) *Req {
 	return r
 }
 
-func (r *Req) Send() (*Response, error) {
+func (r *Req) OnReply(statusMatcher statusMatcher, processor processor) *Req {
+	r.replies = append(r.replies, replyBehavior{
+		statusMatcher: statusMatcher,
+		processor:     processor,
+	})
+
+	return r
+}
+
+func (r *Req) Send() error {
 	if !r.isSuccessfullyCreated() {
-		return nil, r.requestCreationError
+		return r.requestCreationError
 	}
 	client := getDefaultClient()
 	if r.userClient != nil {
@@ -417,10 +432,16 @@ func (r *Req) Send() (*Response, error) {
 
 	httpResponse, err := client.Do(r.httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("%w,%w", ErrConnectionFailed, err)
+		return fmt.Errorf("%w,%w", ErrConnectionFailed, err)
 	}
 
-	return newResponse(httpResponse), nil
+	for i := range r.replies {
+		if r.replies[i].statusMatcher(httpResponse.StatusCode) {
+			return r.replies[i].processor(httpResponse)
+		}
+	}
+
+	return nil
 }
 
 func getBody(reqBody any) (io.Reader, error) {

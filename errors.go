@@ -8,4 +8,6 @@ var (
 	ErrConnectionFailed      = errors.New("could not send the request")
 	ErrCouldNotParseBaseUrl  = errors.New("invalid base path")
 	ErrCouldNotParsePath     = errors.New("invalid path")
+	ErrMarshalToNil          = errors.New("cannot unmarshal to nil")
+	ErrNotPointerParameter   = errors.New("cannot marshal to non pointer type ")
 )

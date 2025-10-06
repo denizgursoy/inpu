@@ -71,3 +71,22 @@ func (e *ClientSuite) Test_Response_UnmarshalJson() {
 	}
 	e.Require().Equal(expectedResponse, result)
 }
+
+func (e *ClientSuite) Test_Response_No_Nil_Parameter() {
+	gock.New(testUrl).Post("/").Reply(http.StatusOK).Body(bytes.NewReader([]byte(`{"foo":"bar"}`)))
+	response, err := Post(testUrl, nil).Send()
+	e.Require().NoError(err)
+
+	err = response.UnmarshalJson(nil)
+	e.Require().ErrorIs(err, ErrMarshalToNil)
+}
+
+func (e *ClientSuite) Test_Response_Parameter_Must_Be_Pointer() {
+	gock.New(testUrl).Post("/").Reply(http.StatusOK).Body(bytes.NewReader([]byte(`{"foo":"bar"}`)))
+	response, err := Post(testUrl, nil).Send()
+	e.Require().NoError(err)
+
+	result := testModel{}
+	err = response.UnmarshalJson(result)
+	e.Require().ErrorIs(err, ErrNotPointerParameter)
+}

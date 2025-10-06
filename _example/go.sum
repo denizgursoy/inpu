@@ -1,0 +1,4 @@
+github.com/denizgursoy/inpu v0.0.0-20251005094720-d331eece0bc9 h1:eRqnE4rc7PjniBWtN08PB5Vnv5P8T6ClmXp7A0Ow2Mc=
+github.com/denizgursoy/inpu v0.0.0-20251005094720-d331eece0bc9/go.mod h1:ERBtFyLe+MtI2MinQDhOM6W3e+O35SCOx6Pn3/3Qwfo=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=

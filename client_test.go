@@ -84,7 +84,7 @@ func (e *ClientSuite) Test_Client_BasePath() {
 
 	response, err := client.
 		Get("/people/1").
-		QueryString("foo", "bar").
+		Query("foo", "bar").
 		Send()
 
 	e.Require().NoError(err)
@@ -104,7 +104,7 @@ func (e *ClientSuite) Test_Client_Empty_BasePath() {
 
 	response, err := client.
 		Get("/people/1").
-		QueryString("foo", "bar").
+		Query("foo", "bar").
 		Send()
 
 	e.Require().NoError(err)
@@ -125,7 +125,7 @@ func (e *ClientSuite) Test_Client_Empty_Uri() {
 
 	response, err := client.
 		Get("").
-		QueryString("foo", "bar").
+		Query("foo", "bar").
 		Send()
 
 	e.Require().NoError(err)
@@ -146,7 +146,7 @@ func (e *ClientSuite) Test_Client_No_Duplicate_Slash() {
 
 	response, err := client.
 		Get("/").
-		QueryString("foo", "bar").
+		Query("foo", "bar").
 		Send()
 
 	e.Require().NoError(err)
@@ -167,7 +167,7 @@ func (e *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
 
 	response, err := client.
 		Get("/../../../../../../test").
-		QueryString("foo", "bar").
+		Query("foo", "bar").
 		Send()
 
 	e.Require().NoError(err)

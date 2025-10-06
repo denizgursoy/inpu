@@ -29,7 +29,7 @@ func (e *ClientSuite) Test_RequestModifierMiddleware() {
 
 	response, err := client.
 		Get(testUrl).
-		QueryString("foo2", "bar2").
+		Query("foo2", "bar2").
 		Header("foo3", "bar3").
 		Send()
 

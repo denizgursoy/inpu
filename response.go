@@ -2,8 +2,8 @@ package inpu
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
+	"reflect"
 	"slices"
 )
 
@@ -54,14 +54,13 @@ func (r *Response) IsOneOf(statusCodes ...int) bool {
 }
 
 func (r *Response) UnmarshalJson(t any) error {
-	defer r.r.Body.Close()
-	all, err := io.ReadAll(r.r.Body)
-	if err != nil {
-		return err
-	}
-	if err = json.Unmarshal(all, t); err != nil {
-		return err
+	if t == nil {
+		return ErrMarshalToNil
 	}
 
-	return nil
+	if reflect.ValueOf(t).Kind() != reflect.Ptr {
+		return ErrNotPointerParameter
+	}
+
+	return json.NewDecoder(r.r.Body).Decode(t)
 }

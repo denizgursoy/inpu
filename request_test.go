@@ -78,7 +78,7 @@ func (e *ClientSuite) Test_Query_Parameters() {
 
 	response, err := Get(testUrl).
 		QueryBool("is_created", true).
-		QueryString("foo", "bar").
+		Query("foo", "bar").
 		QueryFloat32("float", 1.2).
 		QueryFloat64("float64", 2.2).
 		QueryInt("int", 1).
@@ -97,8 +97,8 @@ func (e *ClientSuite) Test_Multiple_Query_Parameters() {
 		Reply(http.StatusOK)
 
 	response, err := Get(testUrl).
-		QueryString("foo", "bar1").
-		QueryString("foo", "bar2").
+		Query("foo", "bar1").
+		Query("foo", "bar2").
 		Send()
 
 	e.Require().NoError(err)

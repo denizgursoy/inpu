@@ -78,7 +78,6 @@ https://jsonplaceholder.typicode.com/todos/1?completed=1&userId=bar1&foo=1&foo1=
 Authorization: Bearer bar-password
 Foo: bar
 Foo1: bar1
-
 ```
 Client is reusable
 ```go

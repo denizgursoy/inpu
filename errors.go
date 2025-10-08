@@ -1,6 +1,8 @@
 package inpu
 
-import "errors"
+import (
+	"errors"
+)
 
 var (
 	ErrRequestCreationFailed = errors.New("could not create the request")

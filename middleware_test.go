@@ -7,19 +7,19 @@ import (
 	"github.com/h2non/gock"
 )
 
-func (e *ClientSuite) Test_Client_No_Duplicate_Middleware() {
-	secondActiveMiddleWare := LoggingMiddleware(false)
+func (c *ClientSuite) Test_Client_No_Duplicate_Middleware() {
+	secondActiveMiddleWare := LoggingMiddleware(false, false)
 	client := New().
 		UseMiddlewares(
-			LoggingMiddleware(true),
+			LoggingMiddleware(true, false),
 			secondActiveMiddleWare,
 		)
 
-	e.Require().Len(client.mws, 1)
-	e.Require().False(client.mws[secondActiveMiddleWare.ID()].(*loggingMiddleware).verbose)
+	c.Require().Len(client.mws, 1)
+	c.Require().False(client.mws[secondActiveMiddleWare.ID()].(*loggingMiddleware).verbose)
 }
 
-func (e *ClientSuite) Test_Client_MiddlewareOrders() {
+func (c *ClientSuite) Test_Client_MiddlewareOrders() {
 	// should get the headers and queries from the client
 	gock.New(testUrl).
 		Get("/").
@@ -28,7 +28,7 @@ func (e *ClientSuite) Test_Client_MiddlewareOrders() {
 	client := New().
 		BasePath(testUrl).
 		UseMiddlewares(
-			LoggingMiddleware(true),
+			LoggingMiddleware(true, false),
 			RetryMiddleware(3),
 			RequestIDMiddleware())
 
@@ -36,5 +36,5 @@ func (e *ClientSuite) Test_Client_MiddlewareOrders() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }

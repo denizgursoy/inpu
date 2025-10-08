@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/denizgursoy/inpu"
 )
@@ -21,6 +23,9 @@ func main() {
 		QueryBool("completed", true).
 		QueryInt("userId", 2).
 		OnReply(inpu.StatusIsSuccess, inpu.UnmarshalJson(&filteredTodos)).
+		OnReply(inpu.StatusIs(http.StatusNotFound), inpu.ReturnError(errors.New("could not find any item"))).
+		OnReply(inpu.StatusIs(http.StatusInternalServerError), inpu.ReturnError(errors.New("server could not handle the request"))).
+		OnReply(inpu.StatusAny, inpu.ReturnError(errors.New("could not fetch the todo items"))).
 		Send()
 	if err != nil {
 		log.Fatal(err)
@@ -29,5 +34,4 @@ func main() {
 	for i := range filteredTodos {
 		fmt.Println(i+1, "-", filteredTodos[i].Title)
 	}
-
 }

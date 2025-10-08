@@ -1,21 +1,20 @@
 package inpu
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	netUrl "net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
 type replyBehavior struct {
-	statusMatcher statusMatcher
-	processor     processor
+	statusMatcher   StatusMatcher
+	responseHandler ResponseHandler
 }
 
 type Req struct {
@@ -34,35 +33,35 @@ func GetCtx(ctx context.Context, url string) *Req {
 	return getReq(ctx, url, nil, nil, nil, "")
 }
 
-func Post(url string, body any) *Req {
+func Post(url string, body Requester) *Req {
 	return postReq(context.Background(), url, body, nil, nil, nil, "")
 }
 
-func PostCtx(ctx context.Context, url string, body any) *Req {
+func PostCtx(ctx context.Context, url string, body Requester) *Req {
 	return postReq(ctx, url, body, nil, nil, nil, "")
 }
 
-func Delete(url string, body any) *Req {
+func Delete(url string, body Requester) *Req {
 	return deleteReq(context.Background(), url, body, nil, nil, nil, "")
 }
 
-func DeleteCtx(ctx context.Context, url string, body any) *Req {
+func DeleteCtx(ctx context.Context, url string, body Requester) *Req {
 	return deleteReq(ctx, url, body, nil, nil, nil, "")
 }
 
-func Put(url string, body any) *Req {
+func Put(url string, body Requester) *Req {
 	return putReq(context.Background(), url, body, nil, nil, nil, "")
 }
 
-func PutCtx(ctx context.Context, url string, body any) *Req {
+func PutCtx(ctx context.Context, url string, body Requester) *Req {
 	return putReq(ctx, url, body, nil, nil, nil, "")
 }
 
-func Patch(url string, body any) *Req {
+func Patch(url string, body Requester) *Req {
 	return patchReq(context.Background(), url, body, nil, nil, nil, "")
 }
 
-func PatchCtx(ctx context.Context, url string, body any) *Req {
+func PatchCtx(ctx context.Context, url string, body Requester) *Req {
 	return patchReq(ctx, url, body, nil, nil, nil, "")
 }
 
@@ -72,37 +71,42 @@ func getReq(ctx context.Context, url string, headers http.Header, queries netUrl
 	return newRequest(ctx, http.MethodGet, url, nil, headers, queries, client, path)
 }
 
-func postReq(ctx context.Context, url string, body any, headers http.Header, queries netUrl.Values,
+func postReq(ctx context.Context, url string, body Requester, headers http.Header, queries netUrl.Values,
 	client *http.Client, path string,
 ) *Req {
 	return newRequest(ctx, http.MethodPost, url, body, headers, queries, client, path)
 }
 
-func deleteReq(ctx context.Context, url string, body any, headers http.Header, queries netUrl.Values,
+func deleteReq(ctx context.Context, url string, body Requester, headers http.Header, queries netUrl.Values,
 	client *http.Client, path string,
 ) *Req {
 	return newRequest(ctx, http.MethodDelete, url, body, headers, queries, client, path)
 }
 
-func putReq(ctx context.Context, url string, body any, headers http.Header, queries netUrl.Values,
+func putReq(ctx context.Context, url string, body Requester, headers http.Header, queries netUrl.Values,
 	client *http.Client, path string,
 ) *Req {
 	return newRequest(ctx, http.MethodPut, url, body, headers, queries, client, path)
 }
 
-func patchReq(ctx context.Context, url string, body any, headers http.Header, queries netUrl.Values,
+func patchReq(ctx context.Context, url string, body Requester, headers http.Header, queries netUrl.Values,
 	client *http.Client, path string,
 ) *Req {
 	return newRequest(ctx, http.MethodPatch, url, body, headers, queries, client, path)
 }
 
-func newRequest(ctx context.Context, method, path string, body any, headers http.Header, queries netUrl.Values,
+func newRequest(ctx context.Context, method, path string, body Requester, headers http.Header, queries netUrl.Values,
 	userClient *http.Client, basePath string,
 ) *Req {
-	bodyAsReader, err := getBody(body)
-	if err != nil {
-		return newInvalidRequest(fmt.Errorf("%w: %w", ErrInvalidBody, err))
+	var bodyAsReader io.Reader
+	if body != nil {
+		var err error
+		bodyAsReader, err = body.GetBody()
+		if err != nil {
+			return newInvalidRequest(fmt.Errorf("%w: %w", ErrInvalidBody, err))
+		}
 	}
+
 	url, err := getUrl(basePath, path)
 	if err != nil {
 		return newInvalidRequest(err)
@@ -166,6 +170,7 @@ func (r *Req) isSuccessfullyCreated() bool {
 
 func (r *Req) Header(key, val string) *Req {
 	r.addHeader(key, val)
+
 	return r
 }
 
@@ -213,6 +218,7 @@ func (r *Req) AuthBasic(username, password string) *Req {
 
 func (r *Req) AuthToken(token string) *Req {
 	r.addHeader(HeaderAuthorization, getTokenHeaderValue(token))
+
 	return r
 }
 
@@ -406,10 +412,10 @@ func (r *Req) TimeOutIn(duration time.Duration) *Req {
 	return r
 }
 
-func (r *Req) OnReply(statusMatcher statusMatcher, processor processor) *Req {
+func (r *Req) OnReply(statusMatcher StatusMatcher, responseHandler ResponseHandler) *Req {
 	r.replies = append(r.replies, replyBehavior{
-		statusMatcher: statusMatcher,
-		processor:     processor,
+		statusMatcher:   statusMatcher,
+		responseHandler: responseHandler,
 	})
 
 	return r
@@ -435,35 +441,19 @@ func (r *Req) Send() error {
 		return fmt.Errorf("%w,%w", ErrConnectionFailed, err)
 	}
 
+	defer DrainBodyAndClose(httpResponse.Body)
+
+	sort.SliceStable(r.replies, func(i, j int) bool {
+		return r.replies[i].statusMatcher.Priority() < r.replies[j].statusMatcher.Priority()
+	})
 	for i := range r.replies {
-		if r.replies[i].statusMatcher(httpResponse.StatusCode) {
-			return r.replies[i].processor(httpResponse)
+		matcher := r.replies[i].statusMatcher
+		if matcher != nil {
+			if matcher.Match(httpResponse.StatusCode) {
+				return r.replies[i].responseHandler(httpResponse)
+			}
 		}
 	}
 
 	return nil
-}
-
-func getBody(reqBody any) (io.Reader, error) {
-	var body io.Reader
-	if reqBody != nil {
-		switch v := reqBody.(type) {
-		case io.Reader:
-			body = v
-		case Requester:
-			reader, err := v.GetBody()
-			if err != nil {
-				return nil, err
-			}
-			body = reader
-		default:
-			bodyAsBytes, err := json.Marshal(reqBody)
-			if err != nil {
-				return nil, err
-			}
-			body = bytes.NewReader(bodyAsBytes)
-		}
-	}
-
-	return body, nil
 }

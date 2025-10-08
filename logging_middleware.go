@@ -9,13 +9,15 @@ import (
 )
 
 type loggingMiddleware struct {
-	verbose bool
+	verbose  bool
+	disabled bool
 }
 
 // LoggingMiddleware creates a logging middleware
-func LoggingMiddleware(verbose bool) Middleware {
+func LoggingMiddleware(verbose, disabled bool) Middleware {
 	return &loggingMiddleware{
-		verbose: verbose,
+		verbose:  verbose,
+		disabled: disabled,
 	}
 }
 
@@ -40,6 +42,10 @@ type loggingTransport struct {
 }
 
 func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.mv.disabled {
+		return t.next.RoundTrip(req)
+	}
+
 	start := time.Now()
 
 	// Log request
@@ -60,13 +66,12 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 
 	// Log response
 	if err != nil {
-		log.Printf("← [%s] %s - ERROR: %v (took %v)",
-			req.Method, req.URL.String(), err, duration)
+		log.Printf("← [%s] %s - ERROR: %v (took %v)", req.Method, req.URL.String(), err, duration)
+
 		return resp, err
 	}
 
-	log.Printf("← [%s] %s - Status: %d - Duration: %v",
-		req.Method, req.URL.String(), resp.StatusCode, duration)
+	log.Printf("← [%s] %s - Status: %d - Duration: %v", req.Method, req.URL.String(), resp.StatusCode, duration)
 
 	if t.mv.verbose {
 		log.Printf("  Response Headers: %v", resp.Header)

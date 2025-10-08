@@ -7,7 +7,7 @@ import (
 	"github.com/h2non/gock"
 )
 
-func (e *ClientSuite) Test_RequestModifierMiddleware() {
+func (c *ClientSuite) Test_RequestModifierMiddleware() {
 	httpClient := &http.Client{Transport: &http.Transport{}}
 	gock.InterceptClient(httpClient)
 
@@ -34,10 +34,10 @@ func (e *ClientSuite) Test_RequestModifierMiddleware() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_IgnoreNilMiddleware() {
+func (c *ClientSuite) Test_IgnoreNilMiddleware() {
 	gock.New(testUrl).
 		Get("/").
 		HeaderPresent(HeaderXRequestID).
@@ -50,11 +50,11 @@ func (e *ClientSuite) Test_IgnoreNilMiddleware() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
-	e.Require().Len(client.mws, 1)
+	c.Require().NoError(err)
+	c.Require().Len(client.mws, 1)
 }
 
-func (e *ClientSuite) Test_RequestIDMiddleware() {
+func (c *ClientSuite) Test_RequestIDMiddleware() {
 	gock.New(testUrl).
 		Get("/").
 		HeaderPresent(HeaderXRequestID).
@@ -66,10 +66,10 @@ func (e *ClientSuite) Test_RequestIDMiddleware() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_ErrorHandlerMiddleware() {
+func (c *ClientSuite) Test_ErrorHandlerMiddleware() {
 	httpError := errors.New("something happened")
 	processedError := errors.New("error is processed")
 	gock.New(testUrl).
@@ -84,5 +84,5 @@ func (e *ClientSuite) Test_ErrorHandlerMiddleware() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().ErrorIs(err, processedError)
+	c.Require().ErrorIs(err, processedError)
 }

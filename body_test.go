@@ -7,7 +7,7 @@ import (
 	"github.com/h2non/gock"
 )
 
-func (e *ClientSuite) Test_Body_BodyFormDataFromUrl() {
+func (c *ClientSuite) Test_Body_BodyFormDataFromUrl() {
 	gock.New(testUrl).
 		Post("/").
 		BodyString("^email=user%40example.com&email=user2%40example.com&foo=bar&foo1=bar1$").
@@ -22,10 +22,10 @@ func (e *ClientSuite) Test_Body_BodyFormDataFromUrl() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Body_BodyFormDataFromMap() {
+func (c *ClientSuite) Test_Body_BodyFormDataFromMap() {
 	gock.New(testUrl).
 		Post("/").
 		BodyString("^email=user%40example.com&foo=bar&foo1=bar1$").
@@ -40,10 +40,10 @@ func (e *ClientSuite) Test_Body_BodyFormDataFromMap() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Body_String() {
+func (c *ClientSuite) Test_Body_String() {
 	gock.New(testUrl).
 		Post("/").
 		BodyString("^foo$").
@@ -53,10 +53,10 @@ func (e *ClientSuite) Test_Body_String() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Body_Xml_Marshal() {
+func (c *ClientSuite) Test_Body_Xml_Marshal() {
 	gock.New(testUrl).
 		Post("/").
 		BodyString(testDataAsXml).
@@ -66,5 +66,5 @@ func (e *ClientSuite) Test_Body_Xml_Marshal() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/h2non/gock"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/goleak"
 )
 
 type ClientSuite struct {
@@ -16,13 +17,15 @@ func TestClientService(t *testing.T) {
 	suite.Run(t, new(ClientSuite))
 }
 
-func (e *ClientSuite) SetupTest() {
-	// gock.EnableNetworking()
+func (c *ClientSuite) SetupTest() {
 	gock.Observe(gock.DumpRequest)
 }
 
-func (e *ClientSuite) TearDownTest() {
+func (c *ClientSuite) TearDownTest() {
 	gock.Off()
 	gock.RestoreClient(http.DefaultClient)
-	// gock.DisableNetworking()
+}
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
 }

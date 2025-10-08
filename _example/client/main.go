@@ -22,7 +22,7 @@ func main() {
 	client := inpu.
 		New().
 		BasePath("https://jsonplaceholder.typicode.com").
-		UseMiddlewares(inpu.LoggingMiddleware(true))
+		UseMiddlewares(inpu.LoggingMiddleware(true, false))
 
 	filteredTodos := make([]ToDo, 0)
 	err := client.Get("/todos").
@@ -47,7 +47,7 @@ func main() {
 		Completed: true,
 	}
 	err = client.
-		Post("/todos", newTodo).
+		Post("/todos", inpu.BodyJson(newTodo)).
 		OnReply(inpu.StatusIsSuccess, inpu.UnmarshalJson(&newTodo)).
 		Send()
 	if err != nil {

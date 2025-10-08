@@ -9,7 +9,7 @@ import (
 	"github.com/h2non/gock"
 )
 
-func (e *ClientSuite) Test_Client() {
+func (c *ClientSuite) Test_Client() {
 	// should get the headers and queries from the client
 	gock.New(testUrl).
 		Get("/").
@@ -35,7 +35,7 @@ func (e *ClientSuite) Test_Client() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 
 	// TODO check the mock after changing the post path
 	gock.New(testUrl).
@@ -50,13 +50,13 @@ func (e *ClientSuite) Test_Client() {
 		BodyString(testDataAsJson).
 		Reply(http.StatusCreated)
 
-	err = client.Post(testUrl, testData).
+	err = client.Post(testUrl, BodyJson(testData)).
 		OnReply(StatusAnyExcept(http.StatusCreated), ReturnError(errors.New("unexpected status"))).
 		Send()
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Client_Timeout() {
+func (c *ClientSuite) Test_Client_Timeout() {
 	// should get the headers and queries from the client
 	gock.New(testUrl).
 		Get("/").
@@ -72,10 +72,10 @@ func (e *ClientSuite) Test_Client_Timeout() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().ErrorIs(err, context.DeadlineExceeded)
+	c.Require().ErrorIs(err, context.DeadlineExceeded)
 }
 
-func (e *ClientSuite) Test_Client_BasePath() {
+func (c *ClientSuite) Test_Client_BasePath() {
 	// should get the headers and queries from the client
 	gock.New(testUrl).
 		Get("^/people/1$").
@@ -93,10 +93,10 @@ func (e *ClientSuite) Test_Client_BasePath() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Client_Empty_BasePath() {
+func (c *ClientSuite) Test_Client_Empty_BasePath() {
 	// should get the headers and queries from the client
 	gock.New("").
 		Get("^/people/1$").
@@ -113,10 +113,10 @@ func (e *ClientSuite) Test_Client_Empty_BasePath() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Client_Empty_Uri() {
+func (c *ClientSuite) Test_Client_Empty_Uri() {
 	// should get the headers and queries from the client
 	gock.New(testUrl).
 		Get("").
@@ -134,10 +134,10 @@ func (e *ClientSuite) Test_Client_Empty_Uri() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Client_No_Duplicate_Slash() {
+func (c *ClientSuite) Test_Client_No_Duplicate_Slash() {
 	// should get the headers and queries from the client
 	gock.New(testUrl).
 		Get("/").
@@ -155,10 +155,10 @@ func (e *ClientSuite) Test_Client_No_Duplicate_Slash() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
+func (c *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
 	// should get the headers and queries from the client
 	gock.New(testUrl).
 		Get("^/test$").
@@ -176,5 +176,5 @@ func (e *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }

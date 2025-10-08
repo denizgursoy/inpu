@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	netUrl "net/url"
-	"slices"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -52,48 +52,48 @@ func (c *Client) GetCtx(ctx context.Context, url string) *Req {
 	return getReq(ctx, url, c.headers, c.queries, c.userClient, c.basePath)
 }
 
-func (c *Client) Post(url string, body any) *Req {
+func (c *Client) Post(url string, body Requester) *Req {
 	c.prepareClientOnce()
 
 	return postReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
-func (c *Client) PostCtx(ctx context.Context, url string, body any) *Req {
+func (c *Client) PostCtx(ctx context.Context, url string, body Requester) *Req {
 	c.prepareClientOnce()
 
 	return postReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
-func (c *Client) Delete(url string, body any) *Req {
+func (c *Client) Delete(url string, body Requester) *Req {
 	c.prepareClientOnce()
 
 	return deleteReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
-func (c *Client) DeleteCtx(ctx context.Context, url string, body any) *Req {
+func (c *Client) DeleteCtx(ctx context.Context, url string, body Requester) *Req {
 	c.prepareClientOnce()
 	return deleteReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
-func (c *Client) Put(url string, body any) *Req {
+func (c *Client) Put(url string, body Requester) *Req {
 	c.prepareClientOnce()
 
 	return putReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
-func (c *Client) PutCtx(ctx context.Context, url string, body any) *Req {
+func (c *Client) PutCtx(ctx context.Context, url string, body Requester) *Req {
 	c.prepareClientOnce()
 
 	return putReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
-func (c *Client) Patch(url string, body any) *Req {
+func (c *Client) Patch(url string, body Requester) *Req {
 	c.prepareClientOnce()
 
 	return patchReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
-func (c *Client) PatchCtx(ctx context.Context, url string, body any) *Req {
+func (c *Client) PatchCtx(ctx context.Context, url string, body Requester) *Req {
 	c.prepareClientOnce()
 
 	return patchReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
@@ -416,8 +416,8 @@ func (c *Client) prepareClientOnce() {
 	c.once.Do(func() {
 		c.setDefaultTransportIfEmpty()
 		mvsSlice := c.convertMvsToSlice()
-		slices.SortFunc(mvsSlice, func(a, b Middleware) int {
-			return a.Priority() - b.Priority()
+		sort.SliceStable(mvsSlice, func(i, j int) bool {
+			return mvsSlice[i].Priority() < mvsSlice[j].Priority()
 		})
 
 		for i := range mvsSlice {

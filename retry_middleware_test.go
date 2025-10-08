@@ -7,7 +7,7 @@ import (
 	"github.com/h2non/gock"
 )
 
-func (e *ClientSuite) Test_RetryMiddleware() {
+func (c *ClientSuite) Test_RetryMiddleware() {
 	httpClient := &http.Client{Transport: &http.Transport{}}
 	gock.InterceptClient(httpClient)
 
@@ -28,5 +28,5 @@ func (e *ClientSuite) Test_RetryMiddleware() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }

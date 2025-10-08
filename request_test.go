@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"net/http"
+	"testing"
 
 	"github.com/h2non/gock"
 )
@@ -22,7 +23,7 @@ var (
 	testDataAsXml    = `<testModel><foo>bar</foo></testModel>`
 )
 
-func (e *ClientSuite) Test_Headers() {
+func (c *ClientSuite) Test_Headers() {
 	gock.New(testUrl).
 		Get("/").
 		MatchHeader(HeaderContentType, MimeTypeJson).
@@ -35,10 +36,10 @@ func (e *ClientSuite) Test_Headers() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Basic_Authentication() {
+func (c *ClientSuite) Test_Basic_Authentication() {
 	gock.New(testUrl).
 		Get("/").
 		BasicAuth(TestUserName, TestUserPassword).
@@ -49,10 +50,10 @@ func (e *ClientSuite) Test_Basic_Authentication() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Token_Authentication() {
+func (c *ClientSuite) Test_Token_Authentication() {
 	token := "sdsds"
 	gock.New(testUrl).
 		Get("/").
@@ -64,10 +65,10 @@ func (e *ClientSuite) Test_Token_Authentication() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Query_Parameters() {
+func (c *ClientSuite) Test_Query_Parameters() {
 	gock.New(testUrl).
 		Get("/").
 		MatchParam("is_created", "true").
@@ -86,10 +87,10 @@ func (e *ClientSuite) Test_Query_Parameters() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Multiple_Query_Parameters() {
+func (c *ClientSuite) Test_Multiple_Query_Parameters() {
 	// TODO test is wrong
 	gock.New(testUrl).
 		Get("/").
@@ -103,32 +104,83 @@ func (e *ClientSuite) Test_Multiple_Query_Parameters() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
-
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Body_Json_Marshal() {
+func (c *ClientSuite) Test_Body_Json_Marshal() {
 	gock.New(testUrl).
 		Post("/").
 		BodyString(testDataAsJson).
 		Reply(http.StatusOK)
 
-	err := Post(testUrl, testData).
+	err := Post(testUrl, BodyJson(testData)).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
 }
 
-func (e *ClientSuite) Test_Body_Reader() {
+func (c *ClientSuite) Test_Body_Reader() {
 	gock.New(testUrl).
 		Post("/").
 		BodyString(testDataAsJson).
 		Reply(http.StatusOK)
 
-	err := Post(testUrl, bytes.NewReader([]byte(testDataAsJson))).
+	err := Post(testUrl, BodyReader(bytes.NewReader([]byte(testDataAsJson)))).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	e.Require().NoError(err)
+	c.Require().NoError(err)
+}
+
+func (c *ClientSuite) Test_Multiple_Chose_Correct_Reply_Behaviour() {
+	gock.New(testUrl).
+		Get("/").
+		MatchParam("foo", "bar1").
+		MatchParam("foo", "bar2").
+		Times(100).
+		Reply(http.StatusOK)
+
+	expectedError := errors.New("correct reply was executed")
+
+	c.T().Run("should select StatusIs over StatusIsSuccess", func(t *testing.T) {
+		err := Get(testUrl).
+			Query("foo", "bar1").
+			Query("foo", "bar2").
+			OnReply(StatusIsSuccess, ReturnError(errors.New("unexpected status"))).
+			OnReply(StatusIs(http.StatusOK), ReturnError(expectedError)).
+			Send()
+
+		c.Require().ErrorIs(err, expectedError)
+	})
+	c.T().Run("should select StatusIs over StatusIsOneOf", func(t *testing.T) {
+		err := Get(testUrl).
+			Query("foo", "bar1").
+			Query("foo", "bar2").
+			OnReply(StatusIsOneOf(http.StatusOK, http.StatusAccepted), ReturnError(errors.New("unexpected status"))).
+			OnReply(StatusIs(http.StatusOK), ReturnError(expectedError)).
+			Send()
+
+		c.Require().ErrorIs(err, expectedError)
+	})
+	c.T().Run("should select StatusIsOneOf over StatusIsSuccess", func(t *testing.T) {
+		err := Get(testUrl).
+			Query("foo", "bar1").
+			Query("foo", "bar2").
+			OnReply(StatusIsSuccess, ReturnError(errors.New("unexpected status"))).
+			OnReply(StatusIsOneOf(http.StatusOK, http.StatusAccepted), ReturnError(expectedError)).
+			Send()
+
+		c.Require().ErrorIs(err, expectedError)
+	})
+	c.T().Run("should select StatusIsOneOf over StatusAny ", func(t *testing.T) {
+		err := Get(testUrl).
+			Query("foo", "bar1").
+			Query("foo", "bar2").
+			OnReply(StatusAny, ReturnError(errors.New("unexpected status"))).
+			OnReply(StatusIsOneOf(http.StatusOK, http.StatusAccepted), ReturnError(expectedError)).
+			Send()
+
+		c.Require().ErrorIs(err, expectedError)
+	})
 }

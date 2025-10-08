@@ -13,7 +13,7 @@ type testModel struct {
 	Foo string `json:"foo" xml:"foo"`
 }
 
-var testUrl = "https://x.com"
+var testUrl = "https://my.example.com"
 
 var (
 	TestUserName     = "test-user"
@@ -94,8 +94,8 @@ func (c *ClientSuite) Test_Multiple_Query_Parameters() {
 	// TODO test is wrong
 	gock.New(testUrl).
 		Get("/").
-		MatchParam("foo", "bar1").
-		MatchParam("foo", "bar2").
+		MatchParam("foo", "^bar1$").
+		MatchParam("foo", "^bar2$").
 		Reply(http.StatusOK)
 
 	err := Get(testUrl).

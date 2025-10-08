@@ -1,7 +1,6 @@
 package inpu
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/h2non/gock"
@@ -19,11 +18,12 @@ func TestClientService(t *testing.T) {
 
 func (c *ClientSuite) SetupTest() {
 	gock.Observe(gock.DumpRequest)
+	gock.InterceptClient(getDefaultClient())
 }
 
 func (c *ClientSuite) TearDownTest() {
 	gock.Off()
-	gock.RestoreClient(http.DefaultClient)
+	gock.RestoreClient(getDefaultClient())
 }
 
 func TestMain(m *testing.M) {

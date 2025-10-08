@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
+	"testing"
 	"time"
 
 	"github.com/h2non/gock"
@@ -177,4 +179,16 @@ func (c *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
 		Send()
 
 	c.Require().NoError(err)
+}
+
+// Measure allocations
+func Benchmark_QueryBuild(b *testing.B) {
+	b.ResetTimer()
+	b.ReportAllocs()
+	get := Get("https://jsonplaceholder.typicode.com/todos")
+	for i := 0; i < b.N; i++ {
+		itoa := strconv.Itoa(i)
+		get.Query("foo"+itoa, "% &bar").QueryInt("foo"+itoa, 1)
+	}
+	b.StopTimer()
 }

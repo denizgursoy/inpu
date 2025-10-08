@@ -23,6 +23,7 @@ type Req struct {
 	requestCreationError error
 	timeOut              time.Duration
 	replies              []replyBehavior
+	queries              netUrl.Values
 }
 
 func Get(url string) *Req {
@@ -137,6 +138,7 @@ func newRequest(ctx context.Context, method, path string, body Requester, header
 	return &Req{
 		userClient: userClient,
 		httpReq:    httpReq,
+		queries:    make(netUrl.Values),
 	}
 }
 
@@ -236,9 +238,7 @@ func (r *Req) UserAgent(userAgent string) *Req {
 
 func (r *Req) addQueryValue(key, value string) *Req {
 	if r.isSuccessfullyCreated() {
-		query := r.httpReq.URL.Query()
-		query.Add(key, value)
-		r.httpReq.URL.RawQuery = query.Encode()
+		r.queries.Add(key, value)
 	}
 
 	return r
@@ -425,6 +425,14 @@ func (r *Req) Send() error {
 	if !r.isSuccessfullyCreated() {
 		return r.requestCreationError
 	}
+	query := r.httpReq.URL.Query()
+	for k, v := range r.queries {
+		for i := range v {
+			query.Add(k, v[i])
+		}
+	}
+	r.httpReq.URL.RawQuery = query.Encode()
+
 	client := getDefaultClient()
 	if r.userClient != nil {
 		client = r.userClient

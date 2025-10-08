@@ -18,7 +18,6 @@ To download:`go get github.com/denizgursoy/inpu`
 Does the following call
 ```
 https://jsonplaceholder.typicode.com/todos?completed=1&userId=bar1 
-
 ```
 ## Check the status code and unmarshall the body
 `OnReply` method allows developers to perform certain operation matched by some status conditions

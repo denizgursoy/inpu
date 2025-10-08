@@ -80,10 +80,10 @@ Foo1: bar1
 ```
 Client is reusable
 ```go
-	err := client.Get("/todos/1").Send()
-	err = client.Patch("/todos/1", BodyJson(payload)).Send()
-	err = client.Post("/todos",  BodyJson(payload)).Send()
-	err = client.Put("/todos/1",  BodyJson(payload)).Send()
+err := client.Get("/todos/1").Send()
+err = client.Patch("/todos/1", BodyJson(payload)).Send()
+err = client.Post("/todos",  BodyJson(payload)).Send()
+err = client.Put("/todos/1",  BodyJson(payload)).Send()
 ```
 
 ## Request Bodies

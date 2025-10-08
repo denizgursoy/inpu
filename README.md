@@ -21,10 +21,10 @@ https://jsonplaceholder.typicode.com/todos?completed=1&userId=bar1
 
 ```
 ## Check the status code and unmarshall the body
-On Reply method allows developer to perform certain operation matched by some status conditions
+`OnReply` method allows developers to perform certain operation matched by some status conditions
 ```go
-   OnReply(inpu.StatusIsSuccess, inpu.UnmarshalJson(&filteredTodos)). // it marshals the body to the array 
-   OnReply(inpu.StatusAny, inpu.ReturnError(errors.New("could not fetch the todo items"))). // it returns the error if status does not match any condition
+OnReply(inpu.StatusIsSuccess, inpu.UnmarshalJson(&filteredTodos)). // it marshals the body to the array 
+OnReply(inpu.StatusAny, inpu.ReturnError(errors.New("could not fetch the todo items"))). // it returns the error if status does not match any condition
 ```
 Other status matchers are:
 ```go
@@ -70,7 +70,7 @@ client := New().
 		Header("foo1", "bar1").
 		AuthToken("bar-password")
 
-	response, err :=client.Get("/todos/1").Send()
+        err :=client.Get("/todos/1").Send()
 ```
 It creates the same get call
 ```
@@ -82,10 +82,10 @@ Foo1: bar1
 ```
 Client is reusable
 ```go
-	err :=client.Get("/todos/1").Send()
-	err =client.Patch("/todos/1", BodyJson(payload)).Send()
-	err =client.Post("/todos",  BodyJson(payload)).Send()
-	err =client.Put("/todos/1",  BodyJson(payload)).Send()
+	err := client.Get("/todos/1").Send()
+	err = client.Patch("/todos/1", BodyJson(payload)).Send()
+	err = client.Post("/todos",  BodyJson(payload)).Send()
+	err = client.Put("/todos/1",  BodyJson(payload)).Send()
 ```
 
 ## Request Bodies
@@ -93,19 +93,19 @@ Request body can be `io.Reader` or any value. If no marshaler found, JSON marsha
 following functions to create request body in the specific formats.
 
 ```go
-    BodyString(body string)
-    BodyXml(body any)
-    BodyJson(body any)
-    BodyReader(body io.Reader)
-    BodyFormDataFromMap(body map[string]string)
-    BodyFormData(body map[string][]string)
+BodyString(body string)
+BodyXml(body any)
+BodyJson(body any)
+BodyReader(body io.Reader)
+BodyFormDataFromMap(body map[string]string)
+BodyFormData(body map[string][]string)
 ```
 
 ## Middlewares
 
 ```go
-    RetryMiddleware(2) // retries twice in case of certain codes
-    LoggingMiddleware(true,false) // logs the request and responses
-    RequestIDMiddleware() // add request ID  header to all request
-    ErrorHandlerMiddleware(handler) // calls the handler in case of connection error
+RetryMiddleware(2) // retries twice in case of certain codes
+LoggingMiddleware(true,false) // logs the request and responses
+RequestIDMiddleware() // add request ID  header to all request
+ErrorHandlerMiddleware(handler) // calls the handler in case of connection error
 ```

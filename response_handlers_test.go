@@ -2,6 +2,7 @@ package inpu
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"sync/atomic"
@@ -62,6 +63,33 @@ func (c *ClientSuite) Test_Response_Parameter_Must_Be_Pointer() {
 		OnReply(StatusIs(http.StatusOK), UnmarshalJson(result)).
 		Send()
 	c.Require().ErrorIs(err, ErrNotPointerParameter)
+}
+
+func (c *ClientSuite) Test_Response_ReturnDefaultError() {
+	gock.
+		New(testUrl).
+		Post("/").
+		Reply(http.StatusInternalServerError).
+		Body(bytes.NewReader([]byte(`{"foo":"bar"}`)))
+
+	err := Post(testUrl, nil).
+		OnReply(StatusAny, ReturnDefaultError).
+		Send()
+	c.Require().Error(err)
+	c.Require().Equal("called [POST] https://my.example.com and got 500", err.Error())
+}
+
+func (c *ClientSuite) Test_Response_ReturnError() {
+	gock.
+		New(testUrl).
+		Post("/").
+		Reply(http.StatusInternalServerError).
+		Body(bytes.NewReader([]byte(`{"foo":"bar"}`)))
+	expectedError := errors.New("something happened")
+	actualError := Post(testUrl, nil).
+		OnReply(StatusAny, ReturnError(expectedError)).
+		Send()
+	c.Require().ErrorIs(actualError, expectedError)
 }
 
 type spyTransport struct {

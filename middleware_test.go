@@ -25,14 +25,14 @@ func (c *ClientSuite) Test_Client_MiddlewareOrders() {
 		Get("/").
 		Reply(http.StatusOK)
 
-	client := New().
+	c.client.
 		BasePath(testUrl).
 		UseMiddlewares(
 			LoggingMiddleware(true, false),
 			RetryMiddleware(3),
 			RequestIDMiddleware())
 
-	err := client.Get("/").
+	err := c.client.Get("/").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 

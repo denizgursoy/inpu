@@ -6,7 +6,7 @@ To download:`go get github.com/denizgursoy/inpu`
 
 ## Build the request and send
 ```go
-	err := inpu.Get("https://jsonplaceholder.typicode.com/todos").
+err := inpu.Get("https://jsonplaceholder.typicode.com/todos").
         QueryBool("completed", true).
         QueryInt("userId", 2).
         OnReply(inpu.StatusIsSuccess, inpu.UnmarshalJson(&filteredTodos)).
@@ -20,12 +20,12 @@ Does the following call
 https://jsonplaceholder.typicode.com/todos?completed=1&userId=bar1 
 ```
 ## Check the status code and unmarshall the body
-`OnReply` method allows developers to perform certain operation matched by some status conditions
+`OnReply` method allows developers to execute `type ResponseHandler func(r *http.Response) error` operation matched by `StatusMatcher`
 ```go
-OnReply(inpu.StatusIsSuccess, inpu.UnmarshalJson(&filteredTodos)). // it marshals the body to the array 
+OnReply(inpu.StatusIsSuccess, inpu.UnmarshalJson(&filteredTodos)). // it marshals the body to the variable
 OnReply(inpu.StatusAny, inpu.ReturnError(errors.New("could not fetch the todo items"))). // it returns the error if status does not match any condition
 ```
-Other status matchers are:
+Available status matchers are:
 ```go
 StatusAny // it matches any status code
 StatusAnyExcept(statusCode int) // it matches any status code expect the one provided
@@ -38,13 +38,13 @@ StatusIsServerError // it matches any status >= 500
 StatusIsOneOf(statusCodes ...int) // it matches any status code in those provided
 StatusIs(expectedStatus int) // it checks if it matches the status provided 
 ```
-Other response handler
+Available response handlers are:
 ```go
 UnmarshalJson(t any) // it marshals the response body into the 
 ReturnError(err error) // it returns the error provided
 ReturnDefaultError() // it returns default error that prints status code, url and method
 ```
-You can also add custom handler.
+You can also add custom handler:
 ```go
 err := inpu.Get("https://jsonplaceholder.typicode.com/todos").
     QueryBool("completed", true).
@@ -64,7 +64,7 @@ client := New().
 		TimeOutIn(time.Second *5). // causes every request created from the client to expire in the duration
 		// following are added to every request created form the client
 		QueryInt("foo", 1).
-		QueryString("foo1", "bar1").
+		Query("foo1", "bar1").
 		Header("foo", "bar").
 		Header("foo1", "bar1").
 		AuthToken("bar-password")
@@ -87,7 +87,7 @@ err = client.Put("/todos/1",  BodyJson(payload)).Send()
 ```
 
 ## Request Bodies
-Request body can be `io.Reader` or any value. If no marshaler found, JSON marshaler is used by default. You can also use
+Request body must be `inpu.Requester`. You can use
 following functions to create request body in the specific formats.
 
 ```go

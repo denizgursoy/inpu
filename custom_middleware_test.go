@@ -43,15 +43,15 @@ func (c *ClientSuite) Test_IgnoreNilMiddleware() {
 		HeaderPresent(HeaderXRequestID).
 		Reply(http.StatusOK)
 
-	client := New().
+	c.client.
 		UseMiddlewares(nil, RequestIDMiddleware(), nil)
-	err := client.
+	err := c.client.
 		Get(testUrl).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
-	c.Require().Len(client.mws, 1)
+	c.Require().Len(c.client.mws, 1)
 }
 
 func (c *ClientSuite) Test_RequestIDMiddleware() {
@@ -60,7 +60,7 @@ func (c *ClientSuite) Test_RequestIDMiddleware() {
 		HeaderPresent(HeaderXRequestID).
 		Reply(http.StatusOK)
 
-	err := New().
+	err := c.client.
 		UseMiddlewares(RequestIDMiddleware()).
 		Get(testUrl).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
@@ -76,7 +76,7 @@ func (c *ClientSuite) Test_ErrorHandlerMiddleware() {
 		Get("/").
 		ReplyError(httpError)
 
-	err := New().
+	err := c.client.
 		UseMiddlewares(ErrorHandlerMiddleware(func(err error) error {
 			return errors.Join(processedError, httpError)
 		})).

@@ -10,6 +10,7 @@ import (
 
 type ClientSuite struct {
 	suite.Suite
+	client *Client
 }
 
 func TestClientService(t *testing.T) {
@@ -18,12 +19,15 @@ func TestClientService(t *testing.T) {
 
 func (c *ClientSuite) SetupTest() {
 	gock.Observe(gock.DumpRequest)
+	c.client = New()
+	gock.InterceptClient(c.client.userClient)
 	gock.InterceptClient(getDefaultClient())
 }
 
 func (c *ClientSuite) TearDownTest() {
 	gock.Off()
 	gock.RestoreClient(getDefaultClient())
+	gock.RestoreClient(c.client.userClient)
 }
 
 func TestMain(m *testing.M) {

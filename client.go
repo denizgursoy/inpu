@@ -26,7 +26,7 @@ func New() *Client {
 	return &Client{
 		headers:    make(http.Header),
 		queries:    make(netUrl.Values),
-		userClient: getDefaultClient(),
+		userClient: getNewClient(),
 		mws:        make(map[string]Middleware),
 	}
 }
@@ -117,7 +117,7 @@ func (c *Client) UseMiddlewares(mws ...Middleware) *Client {
 
 func (c *Client) setDefaultTransportIfEmpty() *Client {
 	if c.userClient.Transport == nil {
-		c.userClient.Transport = http.DefaultTransport
+		c.userClient.Transport = getDefaultTransport()
 	}
 
 	return c

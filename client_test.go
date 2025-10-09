@@ -24,7 +24,7 @@ func (c *ClientSuite) Test_Client() {
 		MatchParam("int", "1").
 		Reply(http.StatusOK)
 
-	client := New().
+	c.client.
 		AcceptJson().
 		ContentTypeJson().
 		QueryBool("is_created", true).
@@ -33,7 +33,7 @@ func (c *ClientSuite) Test_Client() {
 		QueryFloat64("float64", 2.2).
 		QueryInt("int", 1)
 
-	err := client.Get(testUrl).
+	err := c.client.Get(testUrl).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
@@ -52,7 +52,7 @@ func (c *ClientSuite) Test_Client() {
 		BodyString(testDataAsJson).
 		Reply(http.StatusCreated)
 
-	err = client.Post(testUrl, BodyJson(testData)).
+	err = c.client.Post(testUrl, BodyJson(testData)).
 		OnReply(StatusAnyExcept(http.StatusCreated), ReturnError(errors.New("unexpected status"))).
 		Send()
 	c.Require().NoError(err)
@@ -68,9 +68,9 @@ func (c *ClientSuite) Test_Client_Timeout() {
 		}).
 		Reply(http.StatusOK)
 
-	client := New().TimeOutIn(200 * time.Millisecond)
+	c.client.TimeOutIn(200 * time.Millisecond)
 
-	err := client.Get(testUrl).
+	err := c.client.Get(testUrl).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
@@ -85,11 +85,11 @@ func (c *ClientSuite) Test_Client_BasePath() {
 		MatchParam("foo", "^bar$").
 		Reply(http.StatusOK)
 
-	client := New().
+	c.client.
 		BasePath(testUrl).
 		QueryBool("is_created", true)
 
-	err := client.
+	err := c.client.
 		Get("/people/1").
 		Query("foo", "bar").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
@@ -106,10 +106,10 @@ func (c *ClientSuite) Test_Client_Empty_BasePath() {
 		MatchParam("foo", "^bar$").
 		Reply(http.StatusOK)
 
-	client := New().
+	c.client.
 		QueryBool("is_created", true)
 
-	err := client.
+	err := c.client.
 		Get("/people/1").
 		Query("foo", "bar").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
@@ -126,11 +126,11 @@ func (c *ClientSuite) Test_Client_Empty_Uri() {
 		MatchParam("foo", "^bar$").
 		Reply(http.StatusOK)
 
-	client := New().
+	c.client.
 		BasePath(testUrl).
 		QueryBool("is_created", true)
 
-	err := client.
+	err := c.client.
 		Get("").
 		Query("foo", "bar").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
@@ -147,7 +147,7 @@ func (c *ClientSuite) Test_Client_No_Duplicate_Slash() {
 		MatchParam("foo", "^bar$").
 		Reply(http.StatusOK)
 
-	client := New().
+	client := c.client.
 		BasePath(testUrl+"/").
 		QueryBool("is_created", true)
 
@@ -168,11 +168,11 @@ func (c *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
 		MatchParam("foo", "^bar$").
 		Reply(http.StatusOK)
 
-	client := New().
+	c.client.
 		BasePath(testUrl+"/people/1/subscription/23").
 		QueryBool("is_created", true)
 
-	err := client.
+	err := c.client.
 		Get("/../../../../../../test").
 		Query("foo", "bar").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).

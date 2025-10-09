@@ -181,6 +181,13 @@ func (c *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
 	c.Require().NoError(err)
 }
 
+func (c *ClientSuite) Test_Client_No_Nil_Transport() {
+	gock.New(testUrl).Get("/").Reply(http.StatusOK)
+	c.client.userClient.Transport = nil
+	c.client.Get(testUrl)
+	c.Require().NotNil(c.client.userClient.Transport)
+}
+
 // Measure allocations
 func Benchmark_QueryBuild(b *testing.B) {
 	b.ResetTimer()

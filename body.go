@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"net/url"
 	"strings"
@@ -53,7 +54,7 @@ type xmlBody struct {
 func (x *xmlBody) GetBody() (io.Reader, error) {
 	xmlData, err := xml.Marshal(x.body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not marshal to XML: %w", err)
 	}
 
 	return bytes.NewBuffer(xmlData), nil
@@ -66,7 +67,7 @@ type jsonBody struct {
 func (j *jsonBody) GetBody() (io.Reader, error) {
 	xmlData, err := json.Marshal(j.body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not marshal to JSON: %w", err)
 	}
 
 	return bytes.NewBuffer(xmlData), nil

@@ -2,6 +2,7 @@ package inpu
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -22,6 +23,7 @@ type Client struct {
 	basePath   string
 	mws        map[string]Middleware
 	once       sync.Once
+	tlsConfig  *tls.Config
 }
 
 func New() *Client {
@@ -40,6 +42,12 @@ func NewWithHttpClient(client *http.Client) *Client {
 		userClient: client,
 		mws:        make(map[string]Middleware),
 	}
+}
+
+func (c *Client) TlsConfig(tlsConfig *tls.Config) *Client {
+	c.tlsConfig = tlsConfig
+
+	return c
 }
 
 func (c *Client) Get(url string) *Req {
@@ -417,6 +425,13 @@ func (c *Client) BasePath(basePath string) *Client {
 func (c *Client) prepareClientOnce() {
 	c.once.Do(func() {
 		c.setDefaultTransportIfEmpty()
+		if c.tlsConfig != nil {
+			transport, ok := c.userClient.Transport.(*http.Transport)
+			if ok {
+				transport.TLSClientConfig = c.tlsConfig
+			}
+		}
+
 		mvsSlice := c.convertMvsToSlice()
 		sort.SliceStable(mvsSlice, func(i, j int) bool {
 			return mvsSlice[i].Priority() < mvsSlice[j].Priority()

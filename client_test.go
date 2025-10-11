@@ -2,6 +2,7 @@ package inpu
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"net/http"
 	"strconv"
@@ -186,6 +187,23 @@ func (c *ClientSuite) Test_Client_No_Nil_Transport() {
 	c.client.userClient.Transport = nil
 	c.client.Get(testUrl)
 	c.Require().NotNil(c.client.userClient.Transport)
+}
+
+func (c *ClientSuite) Test_Client_Use_The_Last_Provided_Tls_Config() {
+
+	overidedTlsConfig := &tls.Config{}
+	expectedTlsConfig := &tls.Config{
+		ServerName: "expected",
+	}
+
+	client := NewWithHttpClient(&http.Client{}).
+		TlsConfig(overidedTlsConfig).
+		TlsConfig(expectedTlsConfig)
+
+	client.Get("/")
+
+	c.Require().Equal(client.tlsConfig, expectedTlsConfig)
+	c.Require().Equal(client.userClient.Transport.(*http.Transport).TLSClientConfig, expectedTlsConfig)
 }
 
 // Measure allocations

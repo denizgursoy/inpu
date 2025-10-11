@@ -83,7 +83,7 @@ func StatusIs(expectedStatus int) StatusMatcher {
 func DrainBodyAndClose(body io.ReadCloser) error {
 	defer body.Close()
 	// Limit drain to prevent memory issues with huge responses
-	_, err := io.CopyN(io.Discard, body, 1<<20) // 1MB limit
+	_, err := io.Copy(io.Discard, io.LimitReader(body, 1<<20)) // 1MB limit
 	if err != nil {
 		return err
 	}

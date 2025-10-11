@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/hashicorp/go-cleanhttp"
 )
 
 type Client struct {
@@ -26,7 +28,7 @@ func New() *Client {
 	return &Client{
 		headers:    make(http.Header),
 		queries:    make(netUrl.Values),
-		userClient: getNewClient(),
+		userClient: cleanhttp.DefaultPooledClient(),
 		mws:        make(map[string]Middleware),
 	}
 }
@@ -117,7 +119,7 @@ func (c *Client) UseMiddlewares(mws ...Middleware) *Client {
 
 func (c *Client) setDefaultTransportIfEmpty() *Client {
 	if c.userClient.Transport == nil {
-		c.userClient.Transport = getDefaultTransport()
+		c.userClient.Transport = cleanhttp.DefaultPooledTransport()
 	}
 
 	return c

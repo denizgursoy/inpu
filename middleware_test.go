@@ -30,18 +30,24 @@ func (c *ClientSuite) Test_Client_MiddlewareOrders() {
 		Get("/").
 		Reply(http.StatusOK)
 
+	loggingMiddleware := LoggingMiddleware(true, false)
+	retryMiddleware := RetryMiddleware(3)
+	requestIDMiddleware := RequestIDMiddleware()
 	c.client.
 		BasePath(testUrl).
 		UseMiddlewares(
-			LoggingMiddleware(true, false),
-			RetryMiddleware(3),
-			RequestIDMiddleware())
+			loggingMiddleware,
+			retryMiddleware,
+			requestIDMiddleware)
 
 	err := c.client.Get("/").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
+	c.Equal(c.client.mws[0], loggingMiddleware)
+	c.Equal(c.client.mws[1], retryMiddleware)
+	c.Equal(c.client.mws[2], requestIDMiddleware)
 }
 
 func (c *ClientSuite) Test_IgnoreNilMiddleware() {

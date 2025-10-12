@@ -190,7 +190,6 @@ func (c *ClientSuite) Test_Client_No_Nil_Transport() {
 }
 
 func (c *ClientSuite) Test_Client_Use_The_Last_Provided_Tls_Config() {
-
 	overidedTlsConfig := &tls.Config{}
 	expectedTlsConfig := &tls.Config{
 		ServerName: "expected",

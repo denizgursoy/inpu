@@ -43,3 +43,20 @@ func (c *ClientSuite) Test_Client_MiddlewareOrders() {
 
 	c.Require().NoError(err)
 }
+
+func (c *ClientSuite) Test_IgnoreNilMiddleware() {
+	gock.New(testUrl).
+		Get("/").
+		HeaderPresent(HeaderXRequestID).
+		Reply(http.StatusOK)
+
+	c.client.
+		UseMiddlewares(nil, RequestIDMiddleware(), nil)
+	err := c.client.
+		Get(testUrl).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		Send()
+
+	c.Require().NoError(err)
+	c.Require().Len(c.client.mws, 1)
+}

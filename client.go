@@ -119,6 +119,9 @@ func (c *Client) Header(key, val string) *Client {
 
 func (c *Client) UseMiddlewares(mws ...Middleware) *Client {
 	for i := range mws {
+		if mws[i] == nil {
+			continue
+		}
 		index := slices.IndexFunc(c.mws, func(m Middleware) bool {
 			return m.ID() == mws[i].ID()
 		})

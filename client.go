@@ -82,6 +82,7 @@ func (c *Client) Delete(url string, body Requester) *Req {
 
 func (c *Client) DeleteCtx(ctx context.Context, url string, body Requester) *Req {
 	c.prepareClientOnce()
+
 	return deleteReq(ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 

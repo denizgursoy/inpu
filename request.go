@@ -96,7 +96,7 @@ func patchReq(ctx context.Context, url string, body Requester, headers http.Head
 	return newRequest(ctx, http.MethodPatch, url, body, headers, queries, client, path)
 }
 
-func newRequest(ctx context.Context, method, path string, body Requester, headers http.Header, queries netUrl.Values,
+func newRequest(ctx context.Context, method, path string, body Requester, headers http.Header, clientQueries netUrl.Values,
 	userClient *http.Client, basePath string,
 ) *Req {
 	var bodyAsReader io.Reader
@@ -125,20 +125,19 @@ func newRequest(ctx context.Context, method, path string, body Requester, header
 			}
 		}
 	}
-	if queries != nil && len(queries) > 0 {
-		query := httpReq.URL.Query()
-		for k, v := range queries {
+	requestQueries := httpReq.URL.Query()
+	if clientQueries != nil && len(clientQueries) > 0 {
+		for k, v := range clientQueries {
 			for _, v1 := range v {
-				query.Add(k, v1)
+				requestQueries.Add(k, v1)
 			}
 		}
-		httpReq.URL.RawQuery = query.Encode()
 	}
 
 	return &Req{
 		userClient: userClient,
 		httpReq:    httpReq,
-		queries:    make(netUrl.Values),
+		queries:    requestQueries,
 	}
 }
 
@@ -450,13 +449,8 @@ func (r *Req) Send() error {
 	if !r.isSuccessfullyCreated() {
 		return r.requestCreationError
 	}
-	query := r.httpReq.URL.Query()
-	for k, v := range r.queries {
-		for i := range v {
-			query.Add(k, v[i])
-		}
-	}
-	r.httpReq.URL.RawQuery = query.Encode()
+
+	r.httpReq.URL.RawQuery = r.queries.Encode()
 
 	client := getDefaultClient()
 	if r.userClient != nil {

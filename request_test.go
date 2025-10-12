@@ -71,16 +71,16 @@ func (c *ClientSuite) Test_Token_Authentication() {
 func (c *ClientSuite) Test_Query_Parameters() {
 	gock.New(testUrl).
 		Get("/").
-		MatchParam("is_created", "true").
-		MatchParam("foo", "bar").
+		MatchParam("is_created", "^true$").
+		MatchParam("foo", "^bar test encoded$").
 		MatchParam("float", "1.2").
 		MatchParam("float64", "2.2").
-		MatchParam("int", "1").
+		MatchParam("int", "^1$").
 		Reply(http.StatusOK)
 
 	err := Get(testUrl).
 		QueryBool("is_created", true).
-		Query("foo", "bar").
+		Query("foo", "bar test encoded").
 		QueryFloat32("float", 1.2).
 		QueryFloat64("float64", 2.2).
 		QueryInt("int", 1).

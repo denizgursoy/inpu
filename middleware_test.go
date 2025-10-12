@@ -3,6 +3,7 @@ package inpu
 import (
 	"errors"
 	"net/http"
+	"slices"
 
 	"github.com/h2non/gock"
 )
@@ -16,7 +17,11 @@ func (c *ClientSuite) Test_Client_No_Duplicate_Middleware() {
 		)
 
 	c.Require().Len(client.mws, 1)
-	c.Require().False(client.mws[secondActiveMiddleWare.ID()].(*loggingMiddleware).verbose)
+	index := slices.IndexFunc(client.mws, func(m Middleware) bool {
+		return m.ID() == secondActiveMiddleWare.ID()
+	})
+	c.Require().NotEqual(-1, index)
+	c.Require().False(client.mws[index].(*loggingMiddleware).verbose)
 }
 
 func (c *ClientSuite) Test_Client_MiddlewareOrders() {

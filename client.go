@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	netUrl "net/url"
+	"slices"
 	"sort"
 	"strconv"
 	"sync"
@@ -21,7 +22,7 @@ type Client struct {
 	queries    netUrl.Values
 	userClient *http.Client
 	basePath   string
-	mws        map[string]Middleware
+	mws        []Middleware
 	once       sync.Once
 	tlsConfig  *tls.Config
 }
@@ -31,7 +32,7 @@ func New() *Client {
 		headers:    make(http.Header),
 		queries:    make(netUrl.Values),
 		userClient: cleanhttp.DefaultPooledClient(),
-		mws:        make(map[string]Middleware),
+		mws:        make([]Middleware, 0),
 	}
 }
 
@@ -40,7 +41,7 @@ func NewWithHttpClient(client *http.Client) *Client {
 		headers:    make(http.Header),
 		queries:    make(netUrl.Values),
 		userClient: client,
-		mws:        make(map[string]Middleware),
+		mws:        make([]Middleware, 0),
 	}
 }
 
@@ -118,17 +119,15 @@ func (c *Client) Header(key, val string) *Client {
 
 func (c *Client) UseMiddlewares(mws ...Middleware) *Client {
 	for i := range mws {
-		if mws[i] != nil {
-			c.mws[mws[i].ID()] = mws[i]
+		index := slices.IndexFunc(c.mws, func(m Middleware) bool {
+			return m.ID() == mws[i].ID()
+		})
+
+		if index != -1 {
+			c.mws = append(c.mws[:index], c.mws[index+1:]...)
 		}
-	}
 
-	return c
-}
-
-func (c *Client) setDefaultTransportIfEmpty() *Client {
-	if c.userClient.Transport == nil {
-		c.userClient.Transport = cleanhttp.DefaultPooledTransport()
+		c.mws = append(c.mws, mws[i])
 	}
 
 	return c
@@ -425,7 +424,10 @@ func (c *Client) BasePath(basePath string) *Client {
 
 func (c *Client) prepareClientOnce() {
 	c.once.Do(func() {
-		c.setDefaultTransportIfEmpty()
+		if c.userClient.Transport == nil {
+			c.userClient.Transport = cleanhttp.DefaultPooledTransport()
+		}
+
 		if c.tlsConfig != nil {
 			transport, ok := c.userClient.Transport.(*http.Transport)
 			if ok {
@@ -433,24 +435,14 @@ func (c *Client) prepareClientOnce() {
 			}
 		}
 
-		mvsSlice := c.convertMvsToSlice()
-		sort.SliceStable(mvsSlice, func(i, j int) bool {
-			return mvsSlice[i].Priority() < mvsSlice[j].Priority()
+		sort.SliceStable(c.mws, func(i, j int) bool {
+			return c.mws[i].Priority() < c.mws[j].Priority()
 		})
 
-		for i := range mvsSlice {
-			c.userClient.Transport = mvsSlice[i].Apply(c.userClient.Transport)
+		for i := range c.mws {
+			c.userClient.Transport = c.mws[i].Apply(c.userClient.Transport)
 		}
 	})
-}
-
-func (c *Client) convertMvsToSlice() []Middleware {
-	mws := make([]Middleware, 0)
-	for _, v := range c.mws {
-		mws = append(mws, v)
-	}
-
-	return mws
 }
 
 func getTokenHeaderValue(token string) string {

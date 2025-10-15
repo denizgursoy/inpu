@@ -40,13 +40,17 @@ type Client struct {
 func New() *Client {
 	ctx, cancel := context.WithCancel(context.Background())
 
+	client := cleanhttp.DefaultPooledClient()
+	transport := client.Transport.(*http.Transport)
+
 	return &Client{
-		headers:    make(http.Header),
-		queries:    make(netUrl.Values),
-		userClient: cleanhttp.DefaultPooledClient(),
-		mws:        make([]Middleware, 0),
-		ctx:        ctx,
-		cancel:     cancel,
+		headers:       make(http.Header),
+		queries:       make(netUrl.Values),
+		userClient:    client,
+		mws:           make([]Middleware, 0),
+		ctx:           ctx,
+		cancel:        cancel,
+		baseTransport: transport,
 	}
 }
 

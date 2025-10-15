@@ -99,7 +99,7 @@ func patchReq(ctx context.Context, url string, body Requester, headers http.Head
 func newRequest(ctx context.Context, method, path string, body Requester, headers http.Header, clientQueries netUrl.Values,
 	userClient *http.Client, basePath string,
 ) *Req {
-	var bodyAsReader io.Reader
+	var bodyAsReader io.Reader = http.NoBody
 	if body != nil {
 		var err error
 		bodyAsReader, err = body.GetBody()

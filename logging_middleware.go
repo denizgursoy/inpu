@@ -49,7 +49,7 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	start := time.Now()
 
 	// Log request
-	log.Printf("→ [%s] %s", req.Method, req.URL.String())
+	log.Printf("→ [%s] %s", req.Method, req.URL.Redacted())
 
 	if t.mv.verbose {
 		log.Printf("  Headers: %v", req.Header)
@@ -66,12 +66,12 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 
 	// Log response
 	if err != nil {
-		log.Printf("← [%s] %s - ERROR: %v (took %v)", req.Method, req.URL.String(), err, duration)
+		log.Printf("← [%s] %s - ERROR: %v (took %v)", req.Method, req.URL.Redacted(), err, duration)
 
 		return resp, err
 	}
 
-	log.Printf("← [%s] %s - Status: %d - Duration: %v", req.Method, req.URL.String(), resp.StatusCode, duration)
+	log.Printf("← [%s] %s - Status: %d - Duration: %v", req.Method, req.URL.Redacted(), resp.StatusCode, duration)
 
 	if t.mv.verbose {
 		log.Printf("  Response Headers: %v", resp.Header)

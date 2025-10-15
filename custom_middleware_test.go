@@ -3,23 +3,23 @@ package inpu
 import (
 	"errors"
 	"net/http"
-
-	"github.com/h2non/gock"
+	"net/http/httptest"
 )
 
 func (c *ClientSuite) Test_RequestModifierMiddleware() {
-	httpClient := &http.Client{Transport: &http.Transport{}}
-	gock.InterceptClient(httpClient)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
 
-	gock.New(testUrl).
-		Get("/").
-		MatchHeader("foo", "bar").
-		MatchHeader("foo3", "bar3").
-		MatchParam("foo1", "bar1").
-		MatchParam("foo2", "bar2").
-		Reply(http.StatusOK)
+		url := request.URL.Query()
+		c.Require().EqualValues(url.Get("foo1"), "bar1")
+		c.Require().EqualValues(url.Get("foo2"), "bar2")
+		c.Require().EqualValues(request.Header.Get("foo3"), "bar3")
+		c.Require().EqualValues(request.Header.Get("foo"), "bar")
+	}))
 
-	client := NewWithHttpClient(httpClient).
+	defer server.Close()
+
+	client := New().
 		UseMiddlewares(RequestModifierMiddleware(func(request *http.Request) {
 			request.Header.Add("foo", "bar")
 			query := request.URL.Query()
@@ -28,7 +28,7 @@ func (c *ClientSuite) Test_RequestModifierMiddleware() {
 		}, "test-middleware", 99))
 
 	err := client.
-		Get(testUrl).
+		Get(server.URL).
 		Query("foo2", "bar2").
 		Header("foo3", "bar3").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
@@ -38,14 +38,17 @@ func (c *ClientSuite) Test_RequestModifierMiddleware() {
 }
 
 func (c *ClientSuite) Test_RequestIDMiddleware() {
-	gock.New(testUrl).
-		Get("/").
-		HeaderPresent(HeaderXRequestID).
-		Reply(http.StatusOK)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+
+		c.Require().NotEmpty(request.Header.Get(HeaderXRequestID))
+	}))
+
+	defer server.Close()
 
 	err := c.client.
 		UseMiddlewares(RequestIDMiddleware()).
-		Get(testUrl).
+		Get(server.URL).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
@@ -55,15 +58,27 @@ func (c *ClientSuite) Test_RequestIDMiddleware() {
 func (c *ClientSuite) Test_ErrorHandlerMiddleware() {
 	httpError := errors.New("something happened")
 	processedError := errors.New("error is processed")
-	gock.New(testUrl).
-		Get("/").
-		ReplyError(httpError)
 
-	err := c.client.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		// Hijack connection and close it immediately
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			c.Require().Fail("could not hijack")
+		}
+
+		conn, _, err := hj.Hijack()
+		if err != nil {
+			c.Require().NoError(err)
+		}
+		conn.Close() // Close connection abruptly
+	}))
+	defer server.Close()
+
+	err := New().
 		UseMiddlewares(ErrorHandlerMiddleware(func(err error) error {
 			return errors.Join(processedError, httpError)
 		})).
-		Get(testUrl).
+		Get(server.URL).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 

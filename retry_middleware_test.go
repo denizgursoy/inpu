@@ -3,28 +3,27 @@ package inpu
 import (
 	"errors"
 	"net/http"
-
-	"github.com/h2non/gock"
+	"net/http/httptest"
 )
 
 func (c *ClientSuite) Test_RetryMiddleware() {
-	httpClient := &http.Client{Transport: &http.Transport{}}
-	gock.InterceptClient(httpClient)
+	count := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		if count < 2 {
+			w.WriteHeader(http.StatusInternalServerError)
+			count++
 
-	gock.New(testUrl).
-		Get("/").
-		Times(2).
-		Reply(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
 
-	gock.New(testUrl).
-		Get("/").
-		Times(1).
-		Reply(http.StatusOK)
+	defer server.Close()
 
-	client := NewWithHttpClient(httpClient).
+	client := New().
 		UseMiddlewares(RetryMiddleware(2))
 
-	err := client.Get(testUrl).
+	err := client.Get(server.URL).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 

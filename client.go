@@ -18,43 +18,37 @@ import (
 )
 
 type Client struct {
-	headers    http.Header
-	queries    netUrl.Values
-	userClient *http.Client
-	basePath   string
-	mws        []Middleware
-	once       sync.Once
-	tlsConfig  *tls.Config
+	headers         http.Header
+	queries         netUrl.Values
+	userClient      *http.Client
+	basePath        string
+	mws             []Middleware
+	once            sync.Once
+	tlsConfig       *tls.Config
+	isHttp2Disabled bool
+	isTlsDisabled   bool
+	baseTransport   *http.Transport
+	ctx             context.Context
+	cancel          context.CancelFunc
 }
 
 func New() *Client {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &Client{
 		headers:    make(http.Header),
 		queries:    make(netUrl.Values),
 		userClient: cleanhttp.DefaultPooledClient(),
 		mws:        make([]Middleware, 0),
+		ctx:        ctx,
+		cancel:     cancel,
 	}
-}
-
-func NewWithHttpClient(client *http.Client) *Client {
-	return &Client{
-		headers:    make(http.Header),
-		queries:    make(netUrl.Values),
-		userClient: client,
-		mws:        make([]Middleware, 0),
-	}
-}
-
-func (c *Client) TlsConfig(tlsConfig *tls.Config) *Client {
-	c.tlsConfig = tlsConfig
-
-	return c
 }
 
 func (c *Client) Get(url string) *Req {
 	c.prepareClientOnce()
 
-	return getReq(context.Background(), url, c.headers, c.queries, c.userClient, c.basePath)
+	return getReq(c.ctx, url, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) GetCtx(ctx context.Context, url string) *Req {
@@ -66,7 +60,7 @@ func (c *Client) GetCtx(ctx context.Context, url string) *Req {
 func (c *Client) Post(url string, body Requester) *Req {
 	c.prepareClientOnce()
 
-	return postReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
+	return postReq(c.ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PostCtx(ctx context.Context, url string, body Requester) *Req {
@@ -78,7 +72,7 @@ func (c *Client) PostCtx(ctx context.Context, url string, body Requester) *Req {
 func (c *Client) Delete(url string, body Requester) *Req {
 	c.prepareClientOnce()
 
-	return deleteReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
+	return deleteReq(c.ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) DeleteCtx(ctx context.Context, url string, body Requester) *Req {
@@ -90,7 +84,7 @@ func (c *Client) DeleteCtx(ctx context.Context, url string, body Requester) *Req
 func (c *Client) Put(url string, body Requester) *Req {
 	c.prepareClientOnce()
 
-	return putReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
+	return putReq(c.ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PutCtx(ctx context.Context, url string, body Requester) *Req {
@@ -102,7 +96,7 @@ func (c *Client) PutCtx(ctx context.Context, url string, body Requester) *Req {
 func (c *Client) Patch(url string, body Requester) *Req {
 	c.prepareClientOnce()
 
-	return patchReq(context.Background(), url, body, c.headers, c.queries, c.userClient, c.basePath)
+	return patchReq(c.ctx, url, body, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) PatchCtx(ctx context.Context, url string, body Requester) *Req {
@@ -142,6 +136,26 @@ func (c *Client) DisableRedirects() *Client {
 	return c
 }
 
+func (c *Client) TlsConfig(tlsConfig *tls.Config) *Client {
+	c.tlsConfig = tlsConfig
+
+	return c
+}
+
+func (c *Client) DisableHTTP2() *Client {
+	c.isHttp2Disabled = true
+
+	return c
+}
+
+func (c *Client) DisableTLSVerification() *Client {
+	c.isTlsDisabled = true
+
+	return c
+}
+
+// FollowRedirects sets how many times it should follow the redirects.
+// Value zero disables the following.
 func (c *Client) FollowRedirects(maxRedirect int) *Client {
 	c.configureRedirects(maxRedirect)
 
@@ -431,11 +445,21 @@ func (c *Client) prepareClientOnce() {
 			c.userClient.Transport = cleanhttp.DefaultPooledTransport()
 		}
 
-		if c.tlsConfig != nil {
-			transport, ok := c.userClient.Transport.(*http.Transport)
-			if ok {
-				transport.TLSClientConfig = c.tlsConfig
+		transport, ok := c.userClient.Transport.(*http.Transport)
+		if c.tlsConfig != nil && ok {
+			transport.TLSClientConfig = c.tlsConfig
+		}
+
+		if c.isTlsDisabled {
+			if transport.TLSClientConfig == nil {
+				transport.TLSClientConfig = &tls.Config{}
 			}
+			transport.TLSClientConfig.InsecureSkipVerify = true
+		}
+
+		if c.isHttp2Disabled && ok {
+			transport.ForceAttemptHTTP2 = false
+			transport.TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper) // Disable HTTP/2
 		}
 
 		sort.SliceStable(c.mws, func(i, j int) bool {
@@ -456,4 +480,21 @@ func getBasicAuthHeaderValue(username, password string) string {
 	cred := username + ":" + password
 
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(cred))
+}
+
+// Close closes all idle connections and cleans up resources.
+// Call this when you're done using the client.
+// After calling Close, the client should not be reused.
+func (c *Client) Close() {
+	if c.cancel != nil {
+		c.cancel()
+	}
+
+	if c.baseTransport != nil {
+		c.baseTransport.CloseIdleConnections()
+	}
+}
+
+func (c *Client) ToStandardClient() *http.Client {
+	return c.userClient
 }

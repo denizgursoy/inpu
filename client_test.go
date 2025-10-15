@@ -195,7 +195,7 @@ func (c *ClientSuite) Test_Client_Use_The_Last_Provided_Tls_Config() {
 		ServerName: "expected",
 	}
 
-	client := NewWithHttpClient(&http.Client{}).
+	client := New().
 		TlsConfig(overidedTlsConfig).
 		TlsConfig(expectedTlsConfig)
 

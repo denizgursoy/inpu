@@ -28,55 +28,40 @@ func BodyString(body string) Requester {
 }
 
 func BodyXml(body any) Requester {
-	return &xmlBody{
-		body: body,
+	xmlData, err := xml.Marshal(body)
+	if err != nil {
+		return newRequestBody(nil, fmt.Errorf("could not marshal to XML: %w", err))
 	}
+
+	return newRequestBody(bytes.NewBuffer(xmlData), nil)
 }
 
 func BodyJson(body any) Requester {
-	return &jsonBody{
-		body: body,
+	jsonData, err := json.Marshal(body)
+	if err != nil {
+		return newRequestBody(nil, fmt.Errorf("could not marshal to JSON: %w", err))
 	}
+
+	return newRequestBody(bytes.NewBuffer(jsonData), nil)
 }
 
 func BodyReader(body io.Reader) Requester {
-	return &readerBody{body: body}
+	return newRequestBody(body, nil)
 }
 
 type Requester interface {
 	GetBody() (io.Reader, error)
 }
 
-type xmlBody struct {
-	body any
-}
-
-func (x *xmlBody) GetBody() (io.Reader, error) {
-	xmlData, err := xml.Marshal(x.body)
-	if err != nil {
-		return nil, fmt.Errorf("could not marshal to XML: %w", err)
-	}
-
-	return bytes.NewBuffer(xmlData), nil
-}
-
-type jsonBody struct {
-	body any
-}
-
-func (j *jsonBody) GetBody() (io.Reader, error) {
-	xmlData, err := json.Marshal(j.body)
-	if err != nil {
-		return nil, fmt.Errorf("could not marshal to JSON: %w", err)
-	}
-
-	return bytes.NewBuffer(xmlData), nil
-}
-
-type readerBody struct {
+type requestBody struct {
 	body io.Reader
+	err  error
 }
 
-func (r *readerBody) GetBody() (io.Reader, error) {
-	return r.body, nil
+func newRequestBody(body io.Reader, err error) *requestBody {
+	return &requestBody{body: body, err: err}
+}
+
+func (r *requestBody) GetBody() (io.Reader, error) {
+	return r.body, r.err
 }

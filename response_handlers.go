@@ -45,3 +45,10 @@ func ReturnError(err error) ResponseHandler {
 func ReturnDefaultError(r *http.Response) error {
 	return fmt.Errorf("called [%s] -> %s and got %d", r.Request.Method, r.Request.URL.Redacted(), r.StatusCode)
 }
+
+// DoNothing returns nil error
+// Usage:
+// OnReply(StatusAny, DoNothing)
+func DoNothing(_ *http.Response) error {
+	return nil
+}

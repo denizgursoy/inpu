@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
@@ -203,6 +204,101 @@ func (c *ClientSuite) Test_Client_Use_The_Last_Provided_Tls_Config() {
 
 	c.Require().Equal(client.tlsConfig, expectedTlsConfig)
 	c.Require().Equal(client.userClient.Transport.(*http.Transport).TLSClientConfig, expectedTlsConfig)
+}
+
+func (c *ClientSuite) Test_Client_No_Redirect() {
+	serverResponse := "got message from redirected server"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(serverResponse))
+	}))
+
+	defer server.Close()
+
+	// Redirect server
+	redirectServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, server.URL, http.StatusFound) // 302
+	}))
+	defer redirectServer.Close()
+
+	redirectionError := errors.New("server has redirected")
+
+	err := New().
+		DisableRedirects().
+		Get(redirectServer.URL).
+		OnReply(StatusIsRedirection, ReturnError(redirectionError)).
+		OnReply(StatusAny, ReturnDefaultError).
+		Send()
+
+	c.Require().ErrorIs(err, redirectionError)
+
+	err = New().
+		FollowRedirects(0). // should have same effect
+		Get(redirectServer.URL).
+		OnReply(StatusIsRedirection, ReturnError(redirectionError)).
+		OnReply(StatusAny, ReturnDefaultError).
+		Send()
+
+	c.Require().ErrorIs(err, redirectionError)
+}
+
+func (c *ClientSuite) Test_Client_Redirect_Max_Count() {
+	serverResponse := "got message from redirected server"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(serverResponse))
+	}))
+
+	defer server.Close()
+
+	// Redirect server
+	redirectServer1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, server.URL, http.StatusFound) // 302
+	}))
+	defer redirectServer1.Close()
+
+	// Redirect server
+	redirectServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, redirectServer1.URL, http.StatusFound) // 302
+	}))
+	defer redirectServer.Close()
+
+	redirectionError := errors.New("server has redirected")
+
+	err := New().
+		FollowRedirects(3).
+		Get(redirectServer.URL).
+		OnReply(StatusIsOk, DoNothing).
+		OnReply(StatusIsRedirection, ReturnError(redirectionError)).
+		OnReply(StatusAny, ReturnDefaultError).
+		Send()
+
+	c.Require().NoError(err)
+}
+
+func (c *ClientSuite) TestForceAttemptHTTP2True() {
+	// server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 	// Log the protocol version
+	// 	c.T().Logf("Request protocol: %s", r.Proto)
+	// 	w.WriteHeader(http.StatusOK)
+	// 	w.Write([]byte("OK"))
+	// }))
+	// defer server.Close()
+	//
+	// client := New()
+	//
+	// err := client.
+	// 	DisableHTTP2().
+	// 	// DisableTLSVerification().
+	// 	Get(ts.URL).
+	// 	OnReply(StatusAny, func(r *http.Response) error {
+	// 		c.Require().Equal("HTTP/1.1", r.Proto)
+	// 		c.Require().EqualValues(1, r.ProtoMajor)
+	// 		c.Require().EqualValues(1, r.ProtoMinor)
+	// 		return nil
+	// 	}).Send()
+	//
+	// c.Require().NoError(err)
 }
 
 // Measure allocations

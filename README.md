@@ -37,26 +37,73 @@ StatusIsClientError // it matches any status between [400, 500)
 StatusIsServerError // it matches any status >= 500
 StatusIsOneOf(statusCodes ...int) // it matches any status code in those provided
 StatusIs(expectedStatus int) // it checks if it matches the status provided 
+// 1xx Informational
+StatusIsContinue                          // it matches status 100
+StatusIsSwitchingProtocols                // it matches status 101
+StatusIsProcessing                        // it matches status 102
+StatusIsEarlyHints                        // it matches status 103
 // 2xx Success
-StatusIsOk                    // it matches status 200
-StatusIsCreated               // it matches status 201
-StatusIsNoContent             // it matches status 204
+StatusIsOk                                // it matches status 200
+StatusIsCreated                           // it matches status 201
+StatusIsAccepted                          // it matches status 202
+StatusIsNonAuthoritativeInfo              // it matches status 203
+StatusIsNoContent                         // it matches status 204
+StatusIsResetContent                      // it matches status 205
+StatusIsPartialContent                    // it matches status 206
+StatusIsMultiStatus                       // it matches status 207
+StatusIsAlreadyReported                   // it matches status 208
+StatusIsIMUsed                            // it matches status 226
 // 3xx Redirection
-StatusIsMovedPermanently      // it matches status 301
-StatusIsFound                 // it matches status 302
-StatusIsNotModified           // it matches status 304
+StatusIsMultipleChoices                   // it matches status 300
+StatusIsMovedPermanently                  // it matches status 301
+StatusIsFound                             // it matches status 302
+StatusIsSeeOther                          // it matches status 303
+StatusIsNotModified                       // it matches status 304
+StatusIsUseProxy                          // it matches status 305
+StatusIsTemporaryRedirect                 // it matches status 307
+StatusIsPermanentRedirect                 // it matches status 308
 // 4xx Client Errors
-StatusIsBadRequest            // it matches status 400
-StatusIsUnauthorized          // it matches status 401
-StatusIsForbidden             // it matches status 403
-StatusIsNotFound              // it matches status 404
-StatusIsMethodNotAllowed      // it matches status 405
-StatusIsTooManyRequests       // it matches status 429
+StatusIsBadRequest                        // it matches status 400
+StatusIsUnauthorized                      // it matches status 401
+StatusIsPaymentRequired                   // it matches status 402
+StatusIsForbidden                         // it matches status 403
+StatusIsNotFound                          // it matches status 404
+StatusIsMethodNotAllowed                  // it matches status 405
+StatusIsNotAcceptable                     // it matches status 406
+StatusIsProxyAuthRequired                 // it matches status 407
+StatusIsRequestTimeout                    // it matches status 408
+StatusIsConflict                          // it matches status 409
+StatusIsGone                              // it matches status 410
+StatusIsLengthRequired                    // it matches status 411
+StatusIsPreconditionFailed                // it matches status 412
+StatusIsRequestEntityTooLarge             // it matches status 413
+StatusIsRequestURITooLong                 // it matches status 414
+StatusIsUnsupportedMediaType              // it matches status 415
+StatusIsRequestedRangeNotSatisfiable      // it matches status 416
+StatusIsExpectationFailed                 // it matches status 417
+StatusIsTeapot                            // it matches status 418
+StatusIsMisdirectedRequest                // it matches status 421
+StatusIsUnprocessableEntity               // it matches status 422
+StatusIsLocked                            // it matches status 423
+StatusIsFailedDependency                  // it matches status 424
+StatusIsTooEarly                          // it matches status 425
+StatusIsUpgradeRequired                   // it matches status 426
+StatusIsPreconditionRequired              // it matches status 428
+StatusIsTooManyRequests                   // it matches status 429
+StatusIsRequestHeaderFieldsTooLarge       // it matches status 431
+StatusIsUnavailableForLegalReasons        // it matches status 451
 // 5xx Server Errors
-StatusIsInternalServerError   // it matches status 500
-StatusIsBadGateway            // it matches status 502
-StatusIsServiceUnavailable    // it matches status 503
-StatusIsGatewayTimeout        // it matches status 504
+StatusIsInternalServerError               // it matches status 500
+StatusIsNotImplemented                    // it matches status 501
+StatusIsBadGateway                        // it matches status 502
+StatusIsServiceUnavailable                // it matches status 503
+StatusIsGatewayTimeout                    // it matches status 504
+StatusIsHTTPVersionNotSupported           // it matches status 505
+StatusIsVariantAlsoNegotiates             // it matches status 506
+StatusIsInsufficientStorage               // it matches status 507
+StatusIsLoopDetected                      // it matches status 508
+StatusIsNotExtended                       // it matches status 510
+StatusIsNetworkAuthenticationRequired     // it matches status 511
 ```
 Available response handlers are:
 ```go

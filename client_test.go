@@ -306,13 +306,26 @@ func (c *ClientSuite) Test_Tls_Get_Certificate_Error() {
 
 	err := New().
 		Get(server.URL).
-		OnReply(StatusAny, ReturnDefaultError).
-		OnReply(StatusIsOk, DoNothing).
 		Send()
 
 	c.Require().ErrorIs(err, ErrConnectionFailed)
 	target := &tls.CertificateVerificationError{}
 	c.Require().ErrorAs(err, &target)
+}
+
+func (c *ClientSuite) Test_Client_Close() {
+	c.T().Log("will close the client to see requests got cancelled")
+	client := New()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		client.Close()
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	}))
+	defer server.Close()
+
+	err := client.Get(server.URL).Send()
+
+	c.Require().ErrorIs(err, context.Canceled)
 }
 
 // Measure allocations

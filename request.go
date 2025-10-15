@@ -66,6 +66,14 @@ func PatchCtx(ctx context.Context, url string, body Requester) *Req {
 	return patchReq(ctx, url, body, nil, nil, nil, "")
 }
 
+func Head(url string) *Req {
+	return headReq(context.Background(), url, nil, nil, nil, "")
+}
+
+func HeadCtx(ctx context.Context, url string) *Req {
+	return headReq(ctx, url, nil, nil, nil, "")
+}
+
 func getReq(ctx context.Context, url string, headers http.Header, queries netUrl.Values,
 	client *http.Client, path string,
 ) *Req {
@@ -94,6 +102,12 @@ func patchReq(ctx context.Context, url string, body Requester, headers http.Head
 	client *http.Client, path string,
 ) *Req {
 	return newRequest(ctx, http.MethodPatch, url, body, headers, queries, client, path)
+}
+
+func headReq(ctx context.Context, url string, headers http.Header, queries netUrl.Values,
+	client *http.Client, path string,
+) *Req {
+	return newRequest(ctx, http.MethodHead, url, nil, headers, queries, client, path)
 }
 
 func newRequest(ctx context.Context, method, path string, body Requester, headers http.Header, clientQueries netUrl.Values,

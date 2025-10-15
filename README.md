@@ -37,6 +37,26 @@ StatusIsClientError // it matches any status between [400, 500)
 StatusIsServerError // it matches any status >= 500
 StatusIsOneOf(statusCodes ...int) // it matches any status code in those provided
 StatusIs(expectedStatus int) // it checks if it matches the status provided 
+// 2xx Success
+StatusIsOk                    // it matches status 200
+StatusIsCreated               // it matches status 201
+StatusIsNoContent             // it matches status 204
+// 3xx Redirection
+StatusIsMovedPermanently      // it matches status 301
+StatusIsFound                 // it matches status 302
+StatusIsNotModified           // it matches status 304
+// 4xx Client Errors
+StatusIsBadRequest            // it matches status 400
+StatusIsUnauthorized          // it matches status 401
+StatusIsForbidden             // it matches status 403
+StatusIsNotFound              // it matches status 404
+StatusIsMethodNotAllowed      // it matches status 405
+StatusIsTooManyRequests       // it matches status 429
+// 5xx Server Errors
+StatusIsInternalServerError   // it matches status 500
+StatusIsBadGateway            // it matches status 502
+StatusIsServiceUnavailable    // it matches status 503
+StatusIsGatewayTimeout        // it matches status 504
 ```
 Available response handlers are:
 ```go

@@ -2,6 +2,7 @@ package inpu
 
 import (
 	"io"
+	"net/http"
 	"slices"
 )
 
@@ -126,6 +127,141 @@ func StatusIs(expectedStatus int) StatusMatcher {
 		return expectedStatus == actualStatus
 	}, 1)
 }
+
+// 2xx Success
+// StatusIsOk checks if the response status is 200 OK.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsOk, func(r *http.Response) error{}) -> only matches when the status code is 200
+var StatusIsOk = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusOK
+}, 1)
+
+// StatusIsCreated checks if the response status is 201 Created.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsCreated, func(r *http.Response) error{}) -> only matches when the status code is 201
+var StatusIsCreated = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusCreated
+}, 1)
+
+// StatusIsNoContent checks if the response status is 204 No Content.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsNoContent, func(r *http.Response) error{}) -> only matches when the status code is 204
+var StatusIsNoContent = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusNoContent
+}, 1)
+
+// 3xx Redirection
+
+// StatusIsMovedPermanently checks if the response status is 301 Moved Permanently.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsMovedPermanently, func(r *http.Response) error{}) -> only matches when the status code is 301
+var StatusIsMovedPermanently = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusMovedPermanently
+}, 1)
+
+// StatusIsFound checks if the response status is 302 Found.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsFound, func(r *http.Response) error{}) -> only matches when the status code is 302
+var StatusIsFound = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusFound
+}, 1)
+
+// StatusIsNotModified checks if the response status is 304 Not Modified.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsNotModified, func(r *http.Response) error{}) -> only matches when the status code is 304
+var StatusIsNotModified = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusNotModified
+}, 1)
+
+// 4xx Client Errors
+
+// StatusIsBadRequest checks if the response status is 400 Bad Request.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsBadRequest, func(r *http.Response) error{}) -> only matches when the status code is 400
+var StatusIsBadRequest = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusBadRequest
+}, 1)
+
+// StatusIsUnauthorized checks if the response status is 401 Unauthorized.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsUnauthorized, func(r *http.Response) error{}) -> only matches when the status code is 401
+var StatusIsUnauthorized = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusUnauthorized
+}, 1)
+
+// StatusIsForbidden checks if the response status is 403 Forbidden.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsForbidden, func(r *http.Response) error{}) -> only matches when the status code is 403
+var StatusIsForbidden = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusForbidden
+}, 1)
+
+// StatusIsNotFound checks if the response status is 404 Not Found.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsNotFound, func(r *http.Response) error{}) -> only matches when the status code is 404
+var StatusIsNotFound = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusNotFound
+}, 1)
+
+// StatusIsMethodNotAllowed checks if the response status is 405 Method Not Allowed.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsMethodNotAllowed, func(r *http.Response) error{}) -> only matches when the status code is 405
+var StatusIsMethodNotAllowed = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusMethodNotAllowed
+}, 1)
+
+// StatusIsTooManyRequests checks if the response status is 429 Too Many Requests.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsTooManyRequests, func(r *http.Response) error{}) -> only matches when the status code is 429
+var StatusIsTooManyRequests = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusTooManyRequests
+}, 1)
+
+// 5xx Server Errors
+
+// StatusIsInternalServerError checks if the response status is 500 Internal Server Error.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsInternalServerError, func(r *http.Response) error{}) -> only matches when the status code is 500
+var StatusIsInternalServerError = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusInternalServerError
+}, 1)
+
+// StatusIsBadGateway checks if the response status is 502 Bad Gateway.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsBadGateway, func(r *http.Response) error{}) -> only matches when the status code is 502
+var StatusIsBadGateway = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusBadGateway
+}, 1)
+
+// StatusIsServiceUnavailable checks if the response status is 503 Service Unavailable.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsServiceUnavailable, func(r *http.Response) error{}) -> only matches when the status code is 503
+var StatusIsServiceUnavailable = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusServiceUnavailable
+}, 1)
+
+// StatusIsGatewayTimeout checks if the response status is 504 Gateway Timeout.
+// It has the priority 1, and it has the top priority.
+// Usage:
+// OnReply(StatusIsGatewayTimeout, func(r *http.Response) error{}) -> only matches when the status code is 504
+var StatusIsGatewayTimeout = newStatusChecker(func(statusCode int) bool {
+	return statusCode == http.StatusGatewayTimeout
+}, 1)
 
 func DrainBodyAndClose(body io.ReadCloser) error {
 	defer body.Close()

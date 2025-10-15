@@ -113,7 +113,7 @@ func (c *Client) PatchCtx(ctx context.Context, url string, body Requester) *Req 
 func (c *Client) Head(url string) *Req {
 	c.prepareClientOnce()
 
-	return headReq(context.Background(), url, c.headers, c.queries, c.userClient, c.basePath)
+	return headReq(c.ctx, url, c.headers, c.queries, c.userClient, c.basePath)
 }
 
 func (c *Client) HeadCtx(ctx context.Context, url string) *Req {

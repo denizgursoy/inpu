@@ -276,29 +276,43 @@ func (c *ClientSuite) Test_Client_Redirect_Max_Count() {
 	c.Require().NoError(err)
 }
 
-func (c *ClientSuite) TestForceAttemptHTTP2True() {
-	// server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	// Log the protocol version
-	// 	c.T().Logf("Request protocol: %s", r.Proto)
-	// 	w.WriteHeader(http.StatusOK)
-	// 	w.Write([]byte("OK"))
-	// }))
-	// defer server.Close()
-	//
-	// client := New()
-	//
-	// err := client.
-	// 	DisableHTTP2().
-	// 	// DisableTLSVerification().
-	// 	Get(ts.URL).
-	// 	OnReply(StatusAny, func(r *http.Response) error {
-	// 		c.Require().Equal("HTTP/1.1", r.Proto)
-	// 		c.Require().EqualValues(1, r.ProtoMajor)
-	// 		c.Require().EqualValues(1, r.ProtoMinor)
-	// 		return nil
-	// 	}).Send()
-	//
-	// c.Require().NoError(err)
+func (c *ClientSuite) Test_Tls_verify_insecure() {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Log the protocol version
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	}))
+	defer server.Close()
+
+	// c.Require().Equal("HTTP/1.1", r.Proto)
+	// c.Require().EqualValues(1, r.ProtoMajor)
+	// c.Require().EqualValues(1, r.ProtoMinor)
+	err := New().
+		DisableTLSVerification().
+		Get(server.URL).
+		OnReply(StatusAny, ReturnDefaultError).
+		OnReply(StatusIsOk, DoNothing).
+		Send()
+
+	c.Require().NoError(err)
+}
+
+func (c *ClientSuite) Test_Tls_Get_Certificate_Error() {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	}))
+	defer server.Close()
+
+	err := New().
+		Get(server.URL).
+		OnReply(StatusAny, ReturnDefaultError).
+		OnReply(StatusIsOk, DoNothing).
+		Send()
+
+	c.Require().ErrorIs(err, ErrConnectionFailed)
+	target := &tls.CertificateVerificationError{}
+	c.Require().ErrorAs(err, &target)
 }
 
 // Measure allocations

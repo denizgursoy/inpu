@@ -17,6 +17,11 @@ import (
 	"github.com/hashicorp/go-cleanhttp"
 )
 
+const (
+	BasicAuthentication  = "Basic "
+	BearerAuthentication = "Bearer "
+)
+
 type Client struct {
 	headers         http.Header
 	queries         netUrl.Values
@@ -473,13 +478,13 @@ func (c *Client) prepareClientOnce() {
 }
 
 func getTokenHeaderValue(token string) string {
-	return "Bearer " + token
+	return BearerAuthentication + token
 }
 
 func getBasicAuthHeaderValue(username, password string) string {
 	cred := username + ":" + password
 
-	return "Basic " + base64.StdEncoding.EncodeToString([]byte(cred))
+	return BasicAuthentication + base64.StdEncoding.EncodeToString([]byte(cred))
 }
 
 // Close closes all idle connections and cleans up resources.

@@ -6,19 +6,20 @@ To download:`go get github.com/denizgursoy/inpu`
 
 ## Build the request and send
 ```go
-err := inpu.Get("https://jsonplaceholder.typicode.com/todos").
-        QueryBool("completed", true).
-        QueryInt("userId", 2).
-        OnReply(inpu.StatusIsSuccess, inpu.UnmarshalJson(&filteredTodos)).
-        OnReply(inpu.StatusIs(http.StatusNotFound), inpu.ReturnError(errors.New("could not find any item"))).
-        OnReply(inpu.StatusIs(http.StatusInternalServerError), inpu.ReturnError(errors.New("server could not handle the request"))).
-        OnReply(inpu.StatusAny, inpu.ReturnError(errors.New("could not fetch the todo items"))).
-        Send()
+err :=  inpu.Get("https://jsonplaceholder.typicode.com/todos").
+            QueryBool("completed", true).
+            QueryInt("userId", 2).
+            OnReply(inpu.StatusIsOk, inpu.UnmarshalJson(&filteredTodos)).
+            OnReply(inpu.StatusAny, inpu.ReturnDefaultError).
+            Send()
 ```
 Does the following call
 ```
 https://jsonplaceholder.typicode.com/todos?completed=1&userId=bar1 
 ```
+It will marshal the response body to `filteredTodos` if status code `200`. If response code anything except `200`, It will
+return `called [GET] -> https://jsonplaceholder.typicode.com/todos?completed=true&userId=2 and got 500` error to provide more information.
+
 ## Check the status code and unmarshall the body
 `OnReply` method allows developers to execute `type ResponseHandler func(r *http.Response) error` operation matched by `StatusMatcher`
 ```go
@@ -134,14 +135,14 @@ client := New().
 		Query("foo1", "bar1").
 		Header("foo", "bar").
 		Header("foo1", "bar1").
-		AuthToken("bar-password")
+		AuthToken("eyJhbGciOiJSUzI1NiIsImtpZCI6IjFlOWdkazcifQ")
 
         err :=client.Get("/todos/1").Send()
 ```
 It creates the same get call
 ```
 https://jsonplaceholder.typicode.com/todos/1?completed=1&userId=bar1&foo=1&foo1=bar1 
-Authorization: Bearer bar-password
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjFlOWdkazcifQ
 Foo: bar
 Foo1: bar1
 ```

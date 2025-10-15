@@ -43,5 +43,5 @@ func ReturnError(err error) ResponseHandler {
 // Usage:
 // OnReply(StatusAny, ReturnDefaultError)
 func ReturnDefaultError(r *http.Response) error {
-	return fmt.Errorf("called [%s] %s and got %d", r.Request.Method, r.Request.URL.Redacted(), r.StatusCode)
+	return fmt.Errorf("called [%s] -> %s and got %d", r.Request.Method, r.Request.URL.Redacted(), r.StatusCode)
 }

@@ -76,7 +76,7 @@ func (c *ClientSuite) Test_Response_ReturnDefaultError() {
 		OnReply(StatusAny, ReturnDefaultError).
 		Send()
 	c.Require().Error(err)
-	c.Require().Equal("called [POST] https://my.example.com and got 500", err.Error())
+	c.Require().Equal("called [POST] -> https://my.example.com and got 500", err.Error())
 }
 
 func (c *ClientSuite) Test_Response_ReturnError() {

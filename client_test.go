@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/h2non/gock"
 )
 
 func (c *ClientSuite) Test_Client() {
@@ -93,14 +91,15 @@ func (c *ClientSuite) Test_Client_BasePath() {
 }
 
 func (c *ClientSuite) Test_Client_Empty_BasePath() {
-	// should get the headers and queries from the client
-	gock.New("").
-		Get("^/people/1$").
-		MatchParam("is_created", "^true$").
-		MatchParam("foo", "^bar$").
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		c.Require().Equal("/people/1?foo=bar&is_created=true", request.RequestURI)
+	}))
+	defer server.Close()
 
 	err := New().
+		BasePath(server.URL).
 		QueryBool("is_created", true).
 		Get("/people/1").
 		Query("foo", "bar").

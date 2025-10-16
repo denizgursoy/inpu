@@ -3,18 +3,15 @@ package inpu
 import (
 	"bytes"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/h2non/gock"
 )
 
 type testModel struct {
 	Foo string `json:"foo" xml:"foo"`
 }
-
-var testUrl = "https://my.example.com"
 
 var (
 	TestUserName     = "test-user"
@@ -25,13 +22,15 @@ var (
 )
 
 func (c *ClientSuite) Test_Headers() {
-	gock.New(testUrl).
-		Get("/").
-		MatchHeader(HeaderContentType, MimeTypeJson).
-		MatchHeader(HeaderAccept, MimeTypeJson).
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		c.Require().Equal(MimeTypeJson, request.Header.Get(HeaderAccept))
+		c.Require().Equal(MimeTypeJson, request.Header.Get(HeaderContentType))
+	}))
+	defer server.Close()
 
-	err := Get(testUrl).
+	err := Get(server.URL).
 		AcceptJson().
 		ContentTypeJson().
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
@@ -41,12 +40,14 @@ func (c *ClientSuite) Test_Headers() {
 }
 
 func (c *ClientSuite) Test_Basic_Authentication() {
-	gock.New(testUrl).
-		Get("/").
-		BasicAuth(TestUserName, TestUserPassword).
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		c.Require().Equal("Basic dGVzdC11c2VyOnRlc3QtcGFzc3dvcmQ=", request.Header.Get(HeaderAuthorization))
+	}))
+	defer server.Close()
 
-	err := Get(testUrl).
+	err := Get(server.URL).
 		AuthBasic(TestUserName, TestUserPassword).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
@@ -56,12 +57,14 @@ func (c *ClientSuite) Test_Basic_Authentication() {
 
 func (c *ClientSuite) Test_Token_Authentication() {
 	token := "sdsds"
-	gock.New(testUrl).
-		Get("/").
-		MatchHeader(HeaderAuthorization, "Bearer "+token).
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		c.Require().Equal("Bearer "+token, request.Header.Get(HeaderAuthorization))
+	}))
+	defer server.Close()
 
-	err := Get(testUrl).
+	err := Get(server.URL).
 		AuthToken(token).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
@@ -70,16 +73,14 @@ func (c *ClientSuite) Test_Token_Authentication() {
 }
 
 func (c *ClientSuite) Test_Query_Parameters() {
-	gock.New(testUrl).
-		Get("/").
-		MatchParam("is_created", "^true$").
-		MatchParam("foo", "^bar test encoded$").
-		MatchParam("float", "1.2").
-		MatchParam("float64", "2.2").
-		MatchParam("int", "^1$").
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		c.Require().Equal("/?float=1.2000000476837158&float64=2.2&foo=bar+test+encoded&int=1&is_created=true", request.RequestURI)
+	}))
+	defer server.Close()
 
-	err := Get(testUrl).
+	err := Get(server.URL).
 		QueryBool("is_created", true).
 		Query("foo", "bar test encoded").
 		QueryFloat32("float", 1.2).
@@ -92,14 +93,14 @@ func (c *ClientSuite) Test_Query_Parameters() {
 }
 
 func (c *ClientSuite) Test_Multiple_Query_Parameters() {
-	// TODO test is wrong
-	gock.New(testUrl).
-		Get("/").
-		MatchParam("foo", "^bar1$").
-		MatchParam("foo", "^bar2$").
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		c.Require().Equal("/?foo=bar1&foo=bar2", request.RequestURI)
+	}))
+	defer server.Close()
 
-	err := Get(testUrl).
+	err := Get(server.URL).
 		Query("foo", "bar1").
 		Query("foo", "bar2").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
@@ -109,12 +110,16 @@ func (c *ClientSuite) Test_Multiple_Query_Parameters() {
 }
 
 func (c *ClientSuite) Test_Body_Json_Marshal() {
-	gock.New(testUrl).
-		Post("/").
-		BodyString(testDataAsJson).
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		all, err := io.ReadAll(request.Body)
+		c.Require().NoError(err)
+		c.Require().Equal(testDataAsJson, string(all))
+	}))
+	defer server.Close()
 
-	err := Post(testUrl, BodyJson(testData)).
+	err := Post(server.URL, BodyJson(testData)).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
@@ -122,12 +127,16 @@ func (c *ClientSuite) Test_Body_Json_Marshal() {
 }
 
 func (c *ClientSuite) Test_Body_Reader() {
-	gock.New(testUrl).
-		Post("/").
-		BodyString(testDataAsJson).
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		all, err := io.ReadAll(request.Body)
+		c.Require().NoError(err)
+		c.Require().Equal(testDataAsJson, string(all))
+	}))
+	defer server.Close()
 
-	err := Post(testUrl, BodyReader(bytes.NewReader([]byte(testDataAsJson)))).
+	err := Post(server.URL, BodyReader(bytes.NewReader([]byte(testDataAsJson)))).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 

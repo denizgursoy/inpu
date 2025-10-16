@@ -3,9 +3,8 @@ package inpu
 import (
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"slices"
-
-	"github.com/h2non/gock"
 )
 
 func (c *ClientSuite) Test_Client_No_Duplicate_Middleware() {
@@ -25,44 +24,48 @@ func (c *ClientSuite) Test_Client_No_Duplicate_Middleware() {
 }
 
 func (c *ClientSuite) Test_Client_MiddlewareOrders() {
-	// should get the headers and queries from the client
-	gock.New(testUrl).
-		Get("/").
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
 
 	loggingMiddleware := LoggingMiddleware(true, false)
 	retryMiddleware := RetryMiddleware(3)
 	requestIDMiddleware := RequestIDMiddleware()
-	c.client.
-		BasePath(testUrl).
+	client := New().
+		BasePath(server.URL).
 		UseMiddlewares(
 			loggingMiddleware,
 			retryMiddleware,
 			requestIDMiddleware)
 
-	err := c.client.Get("/").
+	err := client.Get("/").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
-	c.Equal(c.client.mws[0], loggingMiddleware)
-	c.Equal(c.client.mws[1], retryMiddleware)
-	c.Equal(c.client.mws[2], requestIDMiddleware)
+	c.Equal(client.mws[0], loggingMiddleware)
+	c.Equal(client.mws[1], retryMiddleware)
+	c.Equal(client.mws[2], requestIDMiddleware)
 }
 
 func (c *ClientSuite) Test_IgnoreNilMiddleware() {
-	gock.New(testUrl).
-		Get("/").
-		HeaderPresent(HeaderXRequestID).
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		c.Require().NotEmpty(request.Header.Get(HeaderXRequestID))
+	}))
+	defer server.Close()
 
-	c.client.
+	client := New().
 		UseMiddlewares(nil, RequestIDMiddleware(), nil)
-	err := c.client.
-		Get(testUrl).
+
+	err := client.
+		Get(server.URL).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
-	c.Require().Len(c.client.mws, 1)
+	c.Require().Len(client.mws, 1)
 }

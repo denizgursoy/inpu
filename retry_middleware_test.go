@@ -7,6 +7,7 @@ import (
 )
 
 func (c *ClientSuite) Test_RetryMiddleware() {
+	c.T().Parallel()
 	count := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		if count < 2 {

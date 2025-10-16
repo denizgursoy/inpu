@@ -1,20 +1,23 @@
 package inpu
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-
-	"github.com/h2non/gock"
 )
 
 func (c *ClientSuite) Test_Response_UnmarshalJson() {
-	gock.New(testUrl).Post("/").Reply(http.StatusOK).Body(bytes.NewReader([]byte(`{"foo":"bar"}`)))
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"foo":"bar"}`))
+	}))
+	defer server.Close()
+
 	result := testModel{}
-	req := Post(testUrl, nil).
+	req := Post(server.URL, nil).
 		OnReply(StatusIs(http.StatusOK), UnmarshalJson(&result))
 
 	err := req.Send()
@@ -27,6 +30,7 @@ func (c *ClientSuite) Test_Response_UnmarshalJson() {
 }
 
 func (c *ClientSuite) Test_Response_No_Nil_Parameter() {
+	c.T().Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"foo":"bar"}`))
@@ -41,6 +45,7 @@ func (c *ClientSuite) Test_Response_No_Nil_Parameter() {
 }
 
 func (c *ClientSuite) Test_Response_Parameter_Must_Be_Pointer() {
+	c.T().Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"foo":"bar"}`))
@@ -55,6 +60,7 @@ func (c *ClientSuite) Test_Response_Parameter_Must_Be_Pointer() {
 }
 
 func (c *ClientSuite) Test_Response_ReturnDefaultError() {
+	c.T().Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(`{"foo":"bar"}`))
@@ -70,6 +76,7 @@ func (c *ClientSuite) Test_Response_ReturnDefaultError() {
 }
 
 func (c *ClientSuite) Test_Response_ReturnError() {
+	c.T().Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(`{"foo":"bar"}`))
@@ -84,6 +91,7 @@ func (c *ClientSuite) Test_Response_ReturnError() {
 }
 
 func (c *ClientSuite) Test_Response_Body_Closed() {
+	c.T().Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(`{"foo":"bar"}`))

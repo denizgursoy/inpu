@@ -8,6 +8,7 @@ import (
 )
 
 func (c *ClientSuite) Test_Body_BodyFormDataFromUrl() {
+	c.T().Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		all, err := io.ReadAll(r.Body)
@@ -29,6 +30,7 @@ func (c *ClientSuite) Test_Body_BodyFormDataFromUrl() {
 }
 
 func (c *ClientSuite) Test_Body_BodyFormDataFromMap() {
+	c.T().Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		all, err := io.ReadAll(r.Body)
@@ -50,6 +52,7 @@ func (c *ClientSuite) Test_Body_BodyFormDataFromMap() {
 }
 
 func (c *ClientSuite) Test_Body_String() {
+	c.T().Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		all, err := io.ReadAll(r.Body)
@@ -66,6 +69,7 @@ func (c *ClientSuite) Test_Body_String() {
 }
 
 func (c *ClientSuite) Test_Body_Xml_Marshal() {
+	c.T().Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		all, err := io.ReadAll(r.Body)

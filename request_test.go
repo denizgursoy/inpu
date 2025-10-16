@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/h2non/gock"
@@ -134,17 +135,16 @@ func (c *ClientSuite) Test_Body_Reader() {
 }
 
 func (c *ClientSuite) Test_Multiple_Chose_Correct_Reply_Behaviour() {
-	gock.New(testUrl).
-		Get("/").
-		MatchParam("foo", "bar1").
-		MatchParam("foo", "bar2").
-		Times(100).
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
 
 	expectedError := errors.New("correct reply was executed")
 
 	c.T().Run("should select StatusIs over StatusIsSuccess", func(t *testing.T) {
-		err := Get(testUrl).
+		err := Get(server.URL).
 			Query("foo", "bar1").
 			Query("foo", "bar2").
 			OnReply(StatusIsSuccess, ReturnError(errors.New("unexpected status"))).
@@ -154,7 +154,7 @@ func (c *ClientSuite) Test_Multiple_Chose_Correct_Reply_Behaviour() {
 		c.Require().ErrorIs(err, expectedError)
 	})
 	c.T().Run("should select StatusIs over StatusIsOneOf", func(t *testing.T) {
-		err := Get(testUrl).
+		err := Get(server.URL).
 			Query("foo", "bar1").
 			Query("foo", "bar2").
 			OnReply(StatusIsOneOf(http.StatusOK, http.StatusAccepted), ReturnError(errors.New("unexpected status"))).
@@ -164,7 +164,7 @@ func (c *ClientSuite) Test_Multiple_Chose_Correct_Reply_Behaviour() {
 		c.Require().ErrorIs(err, expectedError)
 	})
 	c.T().Run("should select StatusIsOneOf over StatusIsSuccess", func(t *testing.T) {
-		err := Get(testUrl).
+		err := Get(server.URL).
 			Query("foo", "bar1").
 			Query("foo", "bar2").
 			OnReply(StatusIsSuccess, ReturnError(errors.New("unexpected status"))).
@@ -174,7 +174,7 @@ func (c *ClientSuite) Test_Multiple_Chose_Correct_Reply_Behaviour() {
 		c.Require().ErrorIs(err, expectedError)
 	})
 	c.T().Run("should select StatusIsOneOf over StatusAny ", func(t *testing.T) {
-		err := Get(testUrl).
+		err := Get(server.URL).
 			Query("foo", "bar1").
 			Query("foo", "bar2").
 			OnReply(StatusAny, ReturnError(errors.New("unexpected status"))).

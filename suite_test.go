@@ -3,31 +3,16 @@ package inpu
 import (
 	"testing"
 
-	"github.com/h2non/gock"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/goleak"
 )
 
 type ClientSuite struct {
 	suite.Suite
-	client *Client
 }
 
 func TestClientService(t *testing.T) {
 	suite.Run(t, new(ClientSuite))
-}
-
-func (c *ClientSuite) SetupTest() {
-	gock.Observe(gock.DumpRequest)
-	c.client = New()
-	gock.InterceptClient(c.client.userClient)
-	gock.InterceptClient(getDefaultClient())
-}
-
-func (c *ClientSuite) TearDownTest() {
-	gock.Off()
-	gock.RestoreClient(getDefaultClient())
-	gock.RestoreClient(c.client.userClient)
 }
 
 func TestMain(m *testing.M) {

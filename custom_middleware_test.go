@@ -46,7 +46,7 @@ func (c *ClientSuite) Test_RequestIDMiddleware() {
 
 	defer server.Close()
 
-	err := c.client.
+	err := New().
 		UseMiddlewares(RequestIDMiddleware()).
 		Get(server.URL).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).

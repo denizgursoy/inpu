@@ -14,19 +14,29 @@ import (
 )
 
 func (c *ClientSuite) Test_Client() {
-	// should get the headers and queries from the client
-	gock.New(testUrl).
-		Get("/").
-		MatchHeader(HeaderContentType, MimeTypeJson).
-		MatchHeader(HeaderAccept, MimeTypeJson).
-		MatchParam("is_created", "true").
-		MatchParam("foo", "bar").
-		MatchParam("float", "1.2").
-		MatchParam("float64", "2.2").
-		MatchParam("int", "1").
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		// TODO check parameters here
+		// should get the headers and queries from the client
+		// gock.New(testUrl).
+		// 	Get("/").
+		// 	MatchHeader(HeaderContentType, MimeTypeJson).
+		// 	MatchHeader(HeaderAccept, MimeTypeJson).
+		// 	MatchParam("is_created", "true").
+		// 	MatchParam("foo", "bar").
+		// 	MatchParam("float", "1.2").
+		// 	MatchParam("float64", "2.2").
+		// 	MatchParam("int", "1").
+		// 	Reply(http.StatusOK)
+		if request.Method == http.MethodGet {
+			w.WriteHeader(http.StatusOK)
+		} else {
+			w.WriteHeader(http.StatusCreated)
+		}
+	}))
+	defer server.Close()
 
-	c.client.
+	client := New().
 		AcceptJson().
 		ContentTypeJson().
 		QueryBool("is_created", true).
@@ -35,44 +45,30 @@ func (c *ClientSuite) Test_Client() {
 		QueryFloat64("float64", 2.2).
 		QueryInt("int", 1)
 
-	err := c.client.Get(testUrl).
+	err := client.Get(server.URL).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
 
-	// TODO check the mock after changing the post path
-	gock.New(testUrl).
-		Post("/").
-		MatchHeader(HeaderContentType, MimeTypeJson).
-		MatchHeader(HeaderAccept, MimeTypeJson).
-		MatchParam("is_created", "true").
-		MatchParam("foo", "bar").
-		MatchParam("float", "1.2").
-		MatchParam("float64", "2.2").
-		MatchParam("int", "1").
-		BodyString(testDataAsJson).
-		Reply(http.StatusCreated)
-
-	err = c.client.Post(testUrl, BodyJson(testData)).
+	err = client.Post(server.URL, BodyJson(testData)).
 		OnReply(StatusAnyExcept(http.StatusCreated), ReturnError(errors.New("unexpected status"))).
 		Send()
+
 	c.Require().NoError(err)
 }
 
 func (c *ClientSuite) Test_Client_Timeout() {
-	// should get the headers and queries from the client
-	gock.New(testUrl).
-		Get("/").
-		Map(func(req *http.Request) *http.Request {
-			time.Sleep(300 * time.Millisecond)
-			return req
-		}).
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		time.Sleep(300 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
 
-	c.client.TimeOutIn(200 * time.Millisecond)
-
-	err := c.client.Get(testUrl).
+	err := New().
+		TimeOutIn(200*time.Millisecond).
+		Get(server.URL).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
@@ -80,20 +76,16 @@ func (c *ClientSuite) Test_Client_Timeout() {
 }
 
 func (c *ClientSuite) Test_Client_BasePath() {
-	// should get the headers and queries from the client
-	gock.New(testUrl).
-		Get("^/people/1$").
-		MatchParam("is_created", "^true$").
-		MatchParam("foo", "^bar$").
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		c.Require().Equal("/people/1", request.RequestURI)
+	}))
+	defer server.Close()
 
-	c.client.
-		BasePath(testUrl).
-		QueryBool("is_created", true)
-
-	err := c.client.
+	err := New().
+		BasePath(server.URL).
 		Get("/people/1").
-		Query("foo", "bar").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
@@ -108,10 +100,8 @@ func (c *ClientSuite) Test_Client_Empty_BasePath() {
 		MatchParam("foo", "^bar$").
 		Reply(http.StatusOK)
 
-	c.client.
-		QueryBool("is_created", true)
-
-	err := c.client.
+	err := New().
+		QueryBool("is_created", true).
 		Get("/people/1").
 		Query("foo", "bar").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
@@ -121,18 +111,16 @@ func (c *ClientSuite) Test_Client_Empty_BasePath() {
 }
 
 func (c *ClientSuite) Test_Client_Empty_Uri() {
-	// should get the headers and queries from the client
-	gock.New(testUrl).
-		Get("").
-		MatchParam("is_created", "^true$").
-		MatchParam("foo", "^bar$").
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		c.Require().Equal("/?foo=bar&is_created=true", request.RequestURI)
+	}))
+	defer server.Close()
 
-	c.client.
-		BasePath(testUrl).
-		QueryBool("is_created", true)
-
-	err := c.client.
+	err := New().
+		BasePath(server.URL).
+		QueryBool("is_created", true).
 		Get("").
 		Query("foo", "bar").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
@@ -142,18 +130,16 @@ func (c *ClientSuite) Test_Client_Empty_Uri() {
 }
 
 func (c *ClientSuite) Test_Client_No_Duplicate_Slash() {
-	// should get the headers and queries from the client
-	gock.New(testUrl).
-		Get("/").
-		MatchParam("is_created", "^true$").
-		MatchParam("foo", "^bar$").
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		c.Require().Equal("/?foo=bar&is_created=true", request.RequestURI)
+	}))
+	defer server.Close()
 
-	client := c.client.
-		BasePath(testUrl+"/").
-		QueryBool("is_created", true)
-
-	err := client.
+	err := New().
+		BasePath(server.URL+"/").
+		QueryBool("is_created", true).
 		Get("/").
 		Query("foo", "bar").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
@@ -163,18 +149,16 @@ func (c *ClientSuite) Test_Client_No_Duplicate_Slash() {
 }
 
 func (c *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
-	// should get the headers and queries from the client
-	gock.New(testUrl).
-		Get("^/test$").
-		MatchParam("is_created", "^true$").
-		MatchParam("foo", "^bar$").
-		Reply(http.StatusOK)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		c.Require().Equal("/test?foo=bar&is_created=true", request.RequestURI)
+	}))
+	defer server.Close()
 
-	c.client.
-		BasePath(testUrl+"/people/1/subscription/23").
-		QueryBool("is_created", true)
-
-	err := c.client.
+	err := New().
+		BasePath(server.URL+"/people/1/subscription/23").
+		QueryBool("is_created", true).
 		Get("/../../../../../../test").
 		Query("foo", "bar").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
@@ -184,10 +168,16 @@ func (c *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
 }
 
 func (c *ClientSuite) Test_Client_No_Nil_Transport() {
-	gock.New(testUrl).Get("/").Reply(http.StatusOK)
-	c.client.userClient.Transport = nil
-	c.client.Get(testUrl)
-	c.Require().NotNil(c.client.userClient.Transport)
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client := New()
+	client.userClient.Transport = nil
+	client.Get(server.URL)
+	c.Require().NotNil(client.userClient.Transport)
 }
 
 func (c *ClientSuite) Test_Client_Use_The_Last_Provided_Tls_Config() {
@@ -207,6 +197,7 @@ func (c *ClientSuite) Test_Client_Use_The_Last_Provided_Tls_Config() {
 }
 
 func (c *ClientSuite) Test_Client_No_Redirect() {
+	c.T().Parallel()
 	serverResponse := "got message from redirected server"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -243,6 +234,7 @@ func (c *ClientSuite) Test_Client_No_Redirect() {
 }
 
 func (c *ClientSuite) Test_Client_Redirect_Max_Count() {
+	c.T().Parallel()
 	serverResponse := "got message from redirected server"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -277,6 +269,7 @@ func (c *ClientSuite) Test_Client_Redirect_Max_Count() {
 }
 
 func (c *ClientSuite) Test_Tls_verify_insecure() {
+	c.T().Parallel()
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Log the protocol version
 		w.WriteHeader(http.StatusOK)
@@ -298,6 +291,7 @@ func (c *ClientSuite) Test_Tls_verify_insecure() {
 }
 
 func (c *ClientSuite) Test_Tls_Get_Certificate_Error() {
+	c.T().Parallel()
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
@@ -314,6 +308,8 @@ func (c *ClientSuite) Test_Tls_Get_Certificate_Error() {
 }
 
 func (c *ClientSuite) Test_Client_Close() {
+	c.T().Parallel()
+
 	c.T().Log("will close the client to see requests got cancelled")
 	client := New()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

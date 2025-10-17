@@ -276,24 +276,42 @@ func (c *ClientSuite) Test_Tls_verify_insecure() {
 	}))
 	defer server.Close()
 
-	// c.Require().Equal("HTTP/1.1", r.Proto)
-	// c.Require().EqualValues(1, r.ProtoMajor)
-	// c.Require().EqualValues(1, r.ProtoMinor)
-	err := New().
+	client := New()
+	err := client.
 		DisableTLSVerification().
 		Get(server.URL).
 		OnReply(StatusAny, ReturnDefaultError).
 		OnReply(StatusIsOk, DoNothing).
 		Send()
 
+	c.Require().True(client.baseTransport.TLSClientConfig.InsecureSkipVerify)
 	c.Require().NoError(err)
+}
+
+func (c *ClientSuite) Test_DisableHTTP2() {
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client := New()
+	err := client.
+		DisableHTTP2().
+		Get(server.URL).
+		OnReply(StatusAny, ReturnDefaultError).
+		OnReply(StatusIsOk, DoNothing).
+		Send()
+
+	c.Require().NoError(err)
+	c.Require().False(client.baseTransport.ForceAttemptHTTP2)
+	c.Require().Len(client.baseTransport.TLSNextProto, 0)
 }
 
 func (c *ClientSuite) Test_Tls_Get_Certificate_Error() {
 	c.T().Parallel()
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 
@@ -313,6 +331,7 @@ func (c *ClientSuite) Test_Client_Close() {
 	client := New()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		client.Close()
+		time.Sleep(100 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	}))

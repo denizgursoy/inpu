@@ -27,6 +27,7 @@ func (c *ClientSuite) Test_Client_MiddlewareOrders() {
 	c.T().Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`test`))
 	}))
 	defer server.Close()
 
@@ -40,7 +41,7 @@ func (c *ClientSuite) Test_Client_MiddlewareOrders() {
 			retryMiddleware,
 			requestIDMiddleware)
 
-	err := client.Get("/").
+	err := client.Post("/", BodyJson(testData)).
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 

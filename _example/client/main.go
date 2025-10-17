@@ -28,13 +28,8 @@ func main() {
 	err := client.Get("/todos").
 		QueryBool("completed", true).
 		QueryInt("userId", 2).
-		OnReply(inpu.StatusIs(http.StatusCreated), inpu.ReturnError(inpu.ErrConnectionFailed)).
-		OnReply(inpu.StatusIsOneOf(http.StatusMovedPermanently, http.StatusAccepted), inpu.UnmarshalJson(filteredTodos)).
-		OnReply(inpu.StatusIsSuccess, inpu.UnmarshalJson(&filteredTodos)).
-		OnReply(inpu.StatusIs(http.StatusOK), inpu.UnmarshalJson(&filteredTodos)).
-		OnReply(inpu.StatusAny, inpu.UnmarshalJson(&filteredTodos)).
-		OnReply(inpu.StatusAnyExcept(http.StatusBadRequest), inpu.UnmarshalJson(&filteredTodos)).
-		OnReply(inpu.StatusAnyExceptOneOf(http.StatusMultipleChoices, http.StatusBadRequest), inpu.UnmarshalJson(&filteredTodos)).
+		OnReply(inpu.StatusIsOk, inpu.UnmarshalJson(&filteredTodos)).
+		OnReply(inpu.StatusAnyExcept(http.StatusOK), inpu.ReturnDefaultError).
 		Send()
 
 	for i := range filteredTodos {

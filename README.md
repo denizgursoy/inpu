@@ -132,7 +132,7 @@ client := New().
 		TimeOutIn(time.Second *5). // causes every request created from the client to expire in the duration
 		// following are added to every request created form the client
 		QueryInt("foo", 1).
-		Query("foo1", "bar1").
+		QueryString("foo1", "bar1").
 		Header("foo", "bar").
 		Header("foo1", "bar1").
 		AuthToken("eyJhbGciOiJSUzI1NiIsImtpZCI6IjFlOWdkazcifQ")

@@ -29,7 +29,7 @@ func (c *ClientSuite) Test_RequestModifierMiddleware() {
 
 	err := client.
 		Get(server.URL).
-		Query("foo2", "bar2").
+		QueryString("foo2", "bar2").
 		Header("foo3", "bar3").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()

@@ -317,7 +317,7 @@ func (r *Req) QueryBool(name string, v bool) *Req {
 	return r.addQueryValue(name, strconv.FormatBool(v))
 }
 
-func (r *Req) Query(name string, v string) *Req {
+func (r *Req) QueryString(name string, v string) *Req {
 	return r.addQueryValue(name, v)
 }
 
@@ -416,7 +416,7 @@ func (r *Req) QueryStringPtr(name string, v *string) *Req {
 	if v == nil {
 		return r
 	}
-	return r.Query(name, *v)
+	return r.QueryString(name, *v)
 }
 
 func (r *Req) TimeOutIn(duration time.Duration) *Req {

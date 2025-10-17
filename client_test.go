@@ -102,7 +102,7 @@ func (c *ClientSuite) Test_Client_Empty_BasePath() {
 		BasePath(server.URL).
 		QueryBool("is_created", true).
 		Get("/people/1").
-		Query("foo", "bar").
+		QueryString("foo", "bar").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
@@ -121,7 +121,7 @@ func (c *ClientSuite) Test_Client_Empty_Uri() {
 		BasePath(server.URL).
 		QueryBool("is_created", true).
 		Get("").
-		Query("foo", "bar").
+		QueryString("foo", "bar").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
@@ -140,7 +140,7 @@ func (c *ClientSuite) Test_Client_No_Duplicate_Slash() {
 		BasePath(server.URL+"/").
 		QueryBool("is_created", true).
 		Get("/").
-		Query("foo", "bar").
+		QueryString("foo", "bar").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
@@ -159,7 +159,7 @@ func (c *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
 		BasePath(server.URL+"/people/1/subscription/23").
 		QueryBool("is_created", true).
 		Get("/../../../../../../test").
-		Query("foo", "bar").
+		QueryString("foo", "bar").
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
@@ -349,7 +349,7 @@ func Benchmark_QueryBuild(b *testing.B) {
 	get := Get("https://jsonplaceholder.typicode.com/todos")
 	for i := 0; i < b.N; i++ {
 		itoa := strconv.Itoa(i)
-		get.Query("foo"+itoa, "% &bar").QueryInt("foo"+itoa, 1)
+		get.QueryString("foo"+itoa, "% &bar").QueryInt("foo"+itoa, 1)
 	}
 	b.StopTimer()
 }

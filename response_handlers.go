@@ -9,7 +9,7 @@ import (
 
 // ResponseHandler is the function you pass along with a status matcher in the OnReply call.
 // It can be
-type ResponseHandler func(r *http.Response) error
+type ResponseHandler func(response *http.Response) error
 
 // UnmarshalJson marshals the body to the pointer provided in the targetAsPointer argument.
 // It checks if the type is pointer as well.

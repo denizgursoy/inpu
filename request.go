@@ -466,10 +466,11 @@ func (r *Req) Send() error {
 
 	r.httpReq.URL.RawQuery = r.queries.Encode()
 
-	client := getDefaultClient()
-	if r.userClient != nil {
-		client = r.userClient
+	client := r.userClient
+	if client == nil {
+		client = getDefaultClient()
 	}
+
 	if r.timeOut > 0 {
 		timeoutCtx, cancel := context.WithTimeout(r.httpReq.Context(), r.timeOut)
 		defer cancel()

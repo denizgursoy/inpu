@@ -5,19 +5,36 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"slices"
+	"strings"
 	"time"
 )
 
+var sensitiveHeaders = []string{HeaderAuthorization, HeaderAPISecret, HeaderAPIKey, HeaderAPIToken, HeaderCookie}
+
+type Logger interface {
+	Printf(string, ...interface{})
+}
+
+// LogLevel represents the logging verbosity level
+type LogLevel int
+
+const (
+	LogLevelDisabled LogLevel = iota
+	LogLevelInfo
+	LogLevelVerbose
+)
+
 type loggingMiddleware struct {
-	verbose  bool
-	disabled bool
+	logger   Logger
+	logLevel LogLevel
 }
 
 // LoggingMiddleware creates a logging middleware
-func LoggingMiddleware(verbose, disabled bool) Middleware {
+func LoggingMiddleware(logLevel LogLevel) Middleware {
 	return &loggingMiddleware{
-		verbose:  verbose,
-		disabled: disabled,
+		logLevel: logLevel,
+		logger:   log.Default(),
 	}
 }
 
@@ -42,21 +59,22 @@ type loggingTransport struct {
 }
 
 func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if t.mv.disabled {
+	if t.mv.logLevel == LogLevelDisabled {
 		return t.next.RoundTrip(req)
 	}
 
 	start := time.Now()
 
 	// Log request
-	log.Printf("→ [%s] %s", req.Method, req.URL.Redacted())
+	t.mv.logger.Printf("→ [%s] %s", req.Method, req.URL.Redacted())
 
-	if t.mv.verbose {
-		log.Printf("  Headers: %v", req.Header)
+	isVerbose := t.mv.logLevel == LogLevelVerbose
+	if isVerbose {
+		t.mv.logger.Printf("  Headers: %v", headersToString(req.Header))
 		if req.Body != nil {
 			body, _ := io.ReadAll(req.Body)
 			req.Body = io.NopCloser(bytes.NewBuffer(body))
-			log.Printf("  Body: %s", string(body))
+			t.mv.logger.Printf("  Body: %s", string(body))
 		}
 	}
 
@@ -66,21 +84,35 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 
 	// Log response
 	if err != nil {
-		log.Printf("← [%s] %s - ERROR: %v (took %v)", req.Method, req.URL.Redacted(), err, duration)
+		t.mv.logger.Printf("← [%s] %s - ERROR: %v (took %v)", req.Method, req.URL.Redacted(), err, duration)
 
 		return resp, err
 	}
 
-	log.Printf("← [%s] %s - Status: %d - Duration: %v", req.Method, req.URL.Redacted(), resp.StatusCode, duration)
+	t.mv.logger.Printf("← [%s] %s - Status: %d - Duration: %v", req.Method, req.URL.Redacted(), resp.StatusCode, duration)
 
-	if t.mv.verbose {
-		log.Printf("  Response Headers: %v", resp.Header)
+	if isVerbose {
+		t.mv.logger.Printf("  Response Headers: %v", headersToString(resp.Header))
 		if resp.Body != nil {
 			body, _ := io.ReadAll(resp.Body)
 			resp.Body = io.NopCloser(bytes.NewBuffer(body))
-			log.Printf("  Response Body: %s", string(body))
+			t.mv.logger.Printf("  Response Body: %s", string(body))
 		}
 	}
 
 	return resp, nil
+}
+
+func headersToString(headers http.Header) string {
+	var parts []string
+
+	for key, values := range headers {
+		for _, value := range values {
+			if slices.Contains(sensitiveHeaders, key) {
+				value = strings.Repeat("X", len(value))
+			}
+			parts = append(parts, key+"="+value)
+		}
+	}
+	return strings.Join(parts, "; ")
 }

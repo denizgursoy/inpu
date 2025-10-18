@@ -12,9 +12,9 @@ const (
 
 	// Authentication headers
 	HeaderAuthorization = "Authorization"
-	HeaderAPIKey        = "X-API-Key"
-	HeaderAPISecret     = "X-API-Secret"
-	HeaderAPIToken      = "X-API-Token"
+	HeaderAPIKey        = "X-Api-Key"
+	HeaderAPISecret     = "X-Api-Secret"
+	HeaderAPIToken      = "X-Api-Token"
 
 	// Client identification
 	HeaderUserAgent = "User-Agent"
@@ -53,15 +53,11 @@ const (
 	HeaderXRealIP        = "X-Real-IP"
 
 	// Security headers (client-side)
-	HeaderXCSRFToken     = "X-CSRF-Token"
+	HeaderXCSRFToken     = "X-Csrf-Token"
 	HeaderXRequestedWith = "X-Requested-With"
 
-	// CORS preflight headers
-	HeaderAccessControlRequestMethod  = "Access-Control-Request-Method"
-	HeaderAccessControlRequestHeaders = "Access-Control-Request-Headers"
-
 	// Common API headers
-	HeaderXAPIVersion = "X-API-Version"
+	HeaderXAPIVersion = "X-Api-Version"
 	HeaderXClientID   = "X-Client-ID"
 	HeaderXSessionID  = "X-Session-ID"
 	HeaderXTenantID   = "X-Tenant-ID"

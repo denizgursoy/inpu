@@ -8,10 +8,10 @@ import (
 )
 
 func (c *ClientSuite) Test_Client_No_Duplicate_Middleware() {
-	secondActiveMiddleWare := LoggingMiddleware(false, false)
+	secondActiveMiddleWare := LoggingMiddleware(LogLevelDisabled)
 	client := New().
 		UseMiddlewares(
-			LoggingMiddleware(true, false),
+			LoggingMiddleware(LogLevelVerbose),
 			secondActiveMiddleWare,
 		)
 
@@ -20,7 +20,7 @@ func (c *ClientSuite) Test_Client_No_Duplicate_Middleware() {
 		return m.ID() == secondActiveMiddleWare.ID()
 	})
 	c.Require().NotEqual(-1, index)
-	c.Require().False(client.mws[index].(*loggingMiddleware).verbose)
+	c.Require().Equal(client.mws[index].(*loggingMiddleware).logLevel, LogLevelDisabled)
 }
 
 func (c *ClientSuite) Test_Client_MiddlewareOrders() {
@@ -31,7 +31,7 @@ func (c *ClientSuite) Test_Client_MiddlewareOrders() {
 	}))
 	defer server.Close()
 
-	loggingMiddleware := LoggingMiddleware(true, false)
+	loggingMiddleware := LoggingMiddleware(LogLevelVerbose)
 	retryMiddleware := RetryMiddleware(3)
 	requestIDMiddleware := RequestIDMiddleware()
 	client := New().

@@ -20,10 +20,10 @@ func (c *ClientSuite) Test_LoggingMiddleware_Level_info() {
 	defer server.Close()
 
 	lgMiddleware := LoggingMiddleware(LogLevelInfo)
-	middleware := lgMiddleware.(*loggingMiddleware)
-	logger := middleware.logger.(*log.Logger)
-	var buf bytes.Buffer
+	logger := lgMiddleware.(*loggingMiddleware).logger.(*log.Logger)
+	var buf strings.Builder
 	logger.SetOutput(&buf)
+
 	client := New().
 		BasePath(server.URL).
 		UseMiddlewares(lgMiddleware).
@@ -38,22 +38,23 @@ func (c *ClientSuite) Test_LoggingMiddleware_Level_info() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	got := buf.String()
+	logs := buf.String()
 	c.Require().NoError(err)
-	c.Require().True(strings.Contains(got, fmt.Sprintf("→ [POST] %s/", server.URL)))
-	c.Require().False(strings.Contains(got, "Headers:"))
-	c.Require().False(strings.Contains(got, "Content-Type=application/json"))
-	c.Require().False(strings.Contains(got, "Authorization=XXXXXXXXXXXXXXX"))
-	c.Require().False(strings.Contains(got, "X-Api-Token=XXXXXXXXXXXXXX"))
-	c.Require().False(strings.Contains(got, "Cookie=XXXXXXXXXXXX"))
-	c.Require().False(strings.Contains(got, "X-Api-Secret=XXXXXXXXXXXXXXX"))
-	c.Require().False(strings.Contains(got, "X-Api-Key=XXXXXXXXXXXX"))
-	c.Require().False(strings.Contains(got, "Body: {\"foo\":\"bar\"}"))
-	c.Require().True(strings.Contains(got, fmt.Sprintf("← [POST] %s/ - Status: 200 - Duration:", server.URL)))
-	c.Require().False(strings.Contains(got, "Response Headers:"))
-	c.Require().False(strings.Contains(got, "Content-Length=2"))
-	c.Require().False(strings.Contains(got, "Content-Type=text/plain"))
-	c.Require().False(strings.Contains(got, "Response Body: ok"))
+	c.Require().NotEqual(len(logs), 0)
+	c.Require().True(strings.Contains(logs, fmt.Sprintf("→ [POST] %s", server.URL)))
+	c.Require().False(strings.Contains(logs, "Headers:"))
+	c.Require().False(strings.Contains(logs, "Content-Type=application/json"))
+	c.Require().False(strings.Contains(logs, "Authorization=XXXXXXXXXXXXXXX"))
+	c.Require().False(strings.Contains(logs, "X-Api-Token=XXXXXXXXXXXXXX"))
+	c.Require().False(strings.Contains(logs, "Cookie=XXXXXXXXXXXX"))
+	c.Require().False(strings.Contains(logs, "X-Api-Secret=XXXXXXXXXXXXXXX"))
+	c.Require().False(strings.Contains(logs, "X-Api-Key=XXXXXXXXXXXX"))
+	c.Require().False(strings.Contains(logs, "Body: {\"foo\":\"bar\"}"))
+	c.Require().True(strings.Contains(logs, fmt.Sprintf("← [POST] %s/ - Status: 200 - Duration:", server.URL)))
+	c.Require().False(strings.Contains(logs, "Response Headers:"))
+	c.Require().False(strings.Contains(logs, "Content-Length=2"))
+	c.Require().False(strings.Contains(logs, "Content-Type=text/plain"))
+	c.Require().False(strings.Contains(logs, "Response Body: ok"))
 }
 
 func (c *ClientSuite) Test_LoggingMiddleware() {
@@ -66,8 +67,7 @@ func (c *ClientSuite) Test_LoggingMiddleware() {
 	defer server.Close()
 
 	lgMiddleware := LoggingMiddleware(LogLevelVerbose)
-	middleware := lgMiddleware.(*loggingMiddleware)
-	logger := middleware.logger.(*log.Logger)
+	logger := lgMiddleware.(*loggingMiddleware).logger.(*log.Logger)
 	var buf bytes.Buffer
 	logger.SetOutput(&buf)
 	client := New().
@@ -84,22 +84,22 @@ func (c *ClientSuite) Test_LoggingMiddleware() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	got := buf.String()
+	logs := buf.String()
 	c.Require().NoError(err)
-	c.Require().True(strings.Contains(got, fmt.Sprintf("→ [POST] %s/", server.URL)))
-	c.Require().True(strings.Contains(got, "Headers:"))
-	c.Require().True(strings.Contains(got, "Content-Type=application/json"))
-	c.Require().True(strings.Contains(got, "Authorization=XXXXXXXXXXXXXXX"))
-	c.Require().True(strings.Contains(got, "X-Api-Token=XXXXXXXXXXXXXX"))
-	c.Require().True(strings.Contains(got, "Cookie=XXXXXXXXXXXX"))
-	c.Require().True(strings.Contains(got, "X-Api-Secret=XXXXXXXXXXXXXXX"))
-	c.Require().True(strings.Contains(got, "X-Api-Key=XXXXXXXXXXXX"))
-	c.Require().True(strings.Contains(got, "Body: {\"foo\":\"bar\"}"))
-	c.Require().True(strings.Contains(got, fmt.Sprintf("← [POST] %s/ - Status: 200 - Duration:", server.URL)))
-	c.Require().True(strings.Contains(got, "Response Headers:"))
-	c.Require().True(strings.Contains(got, "Content-Length=2"))
-	c.Require().True(strings.Contains(got, "Content-Type=text/plain"))
-	c.Require().True(strings.Contains(got, "Response Body: ok"))
+	c.Require().True(strings.Contains(logs, fmt.Sprintf("→ [POST] %s/", server.URL)))
+	c.Require().True(strings.Contains(logs, "Headers:"))
+	c.Require().True(strings.Contains(logs, "Content-Type=application/json"))
+	c.Require().True(strings.Contains(logs, "Authorization=XXXXXXXXXXXXXXX"))
+	c.Require().True(strings.Contains(logs, "X-Api-Token=XXXXXXXXXXXXXX"))
+	c.Require().True(strings.Contains(logs, "Cookie=XXXXXXXXXXXX"))
+	c.Require().True(strings.Contains(logs, "X-Api-Secret=XXXXXXXXXXXXXXX"))
+	c.Require().True(strings.Contains(logs, "X-Api-Key=XXXXXXXXXXXX"))
+	c.Require().True(strings.Contains(logs, "Body: {\"foo\":\"bar\"}"))
+	c.Require().True(strings.Contains(logs, fmt.Sprintf("← [POST] %s/ - Status: 200 - Duration:", server.URL)))
+	c.Require().True(strings.Contains(logs, "Response Headers:"))
+	c.Require().True(strings.Contains(logs, "Content-Length=2"))
+	c.Require().True(strings.Contains(logs, "Content-Type=text/plain"))
+	c.Require().True(strings.Contains(logs, "Response Body: ok"))
 }
 
 func (c *ClientSuite) Test_LoggingMiddleware_Disabled() {
@@ -112,9 +112,8 @@ func (c *ClientSuite) Test_LoggingMiddleware_Disabled() {
 	defer server.Close()
 
 	lgMiddleware := LoggingMiddleware(LogLevelDisabled)
-	middleware := lgMiddleware.(*loggingMiddleware)
-	logger := middleware.logger.(*log.Logger)
-	var buf bytes.Buffer
+	logger := lgMiddleware.(*loggingMiddleware).logger.(*log.Logger)
+	var buf strings.Builder
 	logger.SetOutput(&buf)
 	client := New().
 		BasePath(server.URL).
@@ -130,7 +129,7 @@ func (c *ClientSuite) Test_LoggingMiddleware_Disabled() {
 		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
 		Send()
 
-	got := buf.String()
+	logs := buf.String()
 	c.Require().NoError(err)
-	c.Require().Len(got, 0)
+	c.Require().Len(logs, 0)
 }

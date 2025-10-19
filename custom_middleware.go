@@ -12,6 +12,7 @@ type customMiddleware struct {
 	responseModifier ResponseModifier
 	middlewareID     string
 	priority         int
+	next             http.RoundTripper
 }
 
 // CustomMiddleware creates a logging middleware
@@ -67,27 +68,21 @@ func (t *customMiddleware) Priority() int {
 }
 
 func (t *customMiddleware) Apply(next http.RoundTripper) http.RoundTripper {
-	return &customTransport{
-		next: next,
-		mv:   t,
-	}
+	t.next = next
+
+	return t
 }
 
-type customTransport struct {
-	next http.RoundTripper
-	mv   *customMiddleware
-}
-
-func (t *customTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if t.mv.requestModifier != nil {
-		t.mv.requestModifier(req)
+func (t *customMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.requestModifier != nil {
+		t.requestModifier(req)
 	}
 
 	// Execute request
 	resp, err := t.next.RoundTrip(req)
 	// modify response
-	if t.mv.responseModifier != nil {
-		return t.mv.responseModifier(resp, err)
+	if t.responseModifier != nil {
+		return t.responseModifier(resp, err)
 	}
 
 	return resp, err

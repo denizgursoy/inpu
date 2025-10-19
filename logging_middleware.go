@@ -28,6 +28,7 @@ const (
 type loggingMiddleware struct {
 	logger   Logger
 	logLevel LogLevel
+	next     http.RoundTripper
 }
 
 // LoggingMiddleware creates a logging middleware
@@ -47,34 +48,28 @@ func (t *loggingMiddleware) Priority() int {
 }
 
 func (t *loggingMiddleware) Apply(next http.RoundTripper) http.RoundTripper {
-	return &loggingTransport{
-		next: next,
-		mv:   t,
-	}
+	t.next = next
+
+	return t
 }
 
-type loggingTransport struct {
-	next http.RoundTripper
-	mv   *loggingMiddleware
-}
-
-func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if t.mv.logLevel == LogLevelDisabled {
+func (t *loggingMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.logLevel == LogLevelDisabled {
 		return t.next.RoundTrip(req)
 	}
 
 	start := time.Now()
 
 	// Log request
-	t.mv.logger.Printf("→ [%s] %s", req.Method, req.URL.Redacted())
+	t.logger.Printf("→ [%s] %s", req.Method, req.URL.Redacted())
 
-	isVerbose := t.mv.logLevel == LogLevelVerbose
+	isVerbose := t.logLevel == LogLevelVerbose
 	if isVerbose {
-		t.mv.logger.Printf("  Headers: %v", headersToString(req.Header))
+		t.logger.Printf("  Headers: %v", headersToString(req.Header))
 		if req.Body != nil {
 			body, _ := io.ReadAll(req.Body)
 			req.Body = io.NopCloser(bytes.NewBuffer(body))
-			t.mv.logger.Printf("  Body: %s", string(body))
+			t.logger.Printf("  Body: %s", string(body))
 		}
 	}
 
@@ -84,19 +79,19 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 
 	// Log response
 	if err != nil {
-		t.mv.logger.Printf("← [%s] %s - ERROR: %v (took %v)", req.Method, req.URL.Redacted(), err, duration)
+		t.logger.Printf("← [%s] %s - ERROR: %v (took %v)", req.Method, req.URL.Redacted(), err, duration)
 
 		return resp, err
 	}
 
-	t.mv.logger.Printf("← [%s] %s - Status: %d - Duration: %v", req.Method, req.URL.Redacted(), resp.StatusCode, duration)
+	t.logger.Printf("← [%s] %s - Status: %d - Duration: %v", req.Method, req.URL.Redacted(), resp.StatusCode, duration)
 
 	if isVerbose {
-		t.mv.logger.Printf("  Response Headers: %v", headersToString(resp.Header))
+		t.logger.Printf("  Response Headers: %v", headersToString(resp.Header))
 		if resp.Body != nil {
 			body, _ := io.ReadAll(resp.Body)
 			resp.Body = io.NopCloser(bytes.NewBuffer(body))
-			t.mv.logger.Printf("  Response Body: %s", string(body))
+			t.logger.Printf("  Response Body: %s", string(body))
 		}
 	}
 

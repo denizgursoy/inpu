@@ -18,6 +18,7 @@ type RetryConfig struct {
 
 type retryMiddleware struct {
 	config RetryConfig
+	next   http.RoundTripper
 }
 
 // RetryMiddleware creates a retry middleware with default config
@@ -51,27 +52,20 @@ func (t *retryMiddleware) Priority() int {
 }
 
 func (t *retryMiddleware) Apply(next http.RoundTripper) http.RoundTripper {
-	return &retryTransport{
-		next: next,
-		mv:   t,
-	}
+	t.next = next
+
+	return t
 }
 
-type retryTransport struct {
-	next http.RoundTripper
-	mv   *retryMiddleware
-}
-
-func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 	var err error
 
-	backoff := t.mv.config.InitialBackoff
+	backoff := t.config.InitialBackoff
 
-	for attempt := 0; attempt <= t.mv.config.MaxRetries; attempt++ {
+	for attempt := 0; attempt <= t.config.MaxRetries; attempt++ {
 		// Clone request for retry (important for body)
 		clonedReq := t.cloneRequest(req)
-
 		resp, err = t.next.RoundTrip(clonedReq)
 
 		// Check if we should retry
@@ -80,20 +74,20 @@ func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		}
 
 		// Don't sleep after last attempt
-		if attempt < t.mv.config.MaxRetries {
+		if attempt < t.config.MaxRetries {
 			// Check context cancellation
 			select {
 			case <-req.Context().Done():
 				return resp, req.Context().Err()
 			case <-time.After(backoff):
 				log.Printf("[RETRY] Attempt %d/%d for %s %s (waiting %v)",
-					attempt+1, t.mv.config.MaxRetries, req.Method, req.URL, backoff)
+					attempt+1, t.config.MaxRetries, req.Method, req.URL, backoff)
 			}
 
 			// Exponential backoff
-			backoff = time.Duration(float64(backoff) * t.mv.config.BackoffMultiplier)
-			if backoff > t.mv.config.MaxBackoff {
-				backoff = t.mv.config.MaxBackoff
+			backoff = time.Duration(float64(backoff) * t.config.BackoffMultiplier)
+			if backoff > t.config.MaxBackoff {
+				backoff = t.config.MaxBackoff
 			}
 		}
 	}
@@ -101,9 +95,9 @@ func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-func (t *retryTransport) shouldRetry(resp *http.Response, err error, attempt int) bool {
+func (t *retryMiddleware) shouldRetry(resp *http.Response, err error, attempt int) bool {
 	// No more retries left
-	if attempt >= t.mv.config.MaxRetries {
+	if attempt >= t.config.MaxRetries {
 		return false
 	}
 
@@ -113,7 +107,7 @@ func (t *retryTransport) shouldRetry(resp *http.Response, err error, attempt int
 	}
 
 	// Check if status code is retryable
-	if t.mv.config.RetryStatusCodes[resp.StatusCode] {
+	if t.config.RetryStatusCodes[resp.StatusCode] {
 		return true
 	}
 
@@ -125,7 +119,7 @@ func (t *retryTransport) shouldRetry(resp *http.Response, err error, attempt int
 	return false
 }
 
-func (t *retryTransport) cloneRequest(req *http.Request) *http.Request {
+func (t *retryMiddleware) cloneRequest(req *http.Request) *http.Request {
 	clonedReq := req.Clone(req.Context())
 
 	// If body exists, we need to cache and restore it

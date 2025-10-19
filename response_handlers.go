@@ -2,7 +2,6 @@ package inpu
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"reflect"
 )
@@ -43,7 +42,11 @@ func ReturnError(err error) ResponseHandler {
 // Usage:
 // OnReply(StatusAny, ReturnDefaultError)
 func ReturnDefaultError(r *http.Response) error {
-	return fmt.Errorf("called [%s] -> %s and got %d", r.Request.Method, r.Request.URL.Redacted(), r.StatusCode)
+	return &DefaultError{
+		Method:     r.Request.Method,
+		URL:        r.Request.URL.Redacted(),
+		StatusCode: r.StatusCode,
+	}
 }
 
 // DoNothing returns nil error

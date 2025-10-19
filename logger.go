@@ -11,7 +11,16 @@ type ctxKey string
 
 const loggerCtxKey ctxKey = "inpu_logger"
 
-var defaultLogger = NewLogger(LogLevelSimple)
+type LogLevel int
+
+const (
+	LogLevelError LogLevel = iota
+	LogLevelWarn
+	LogLevelInfo
+	LogLevelDebug
+)
+
+var defaultLogger = NewLogger(LogLevelInfo)
 
 func WithLogger(ctx context.Context, logger Logger) context.Context {
 	return context.WithValue(ctx, loggerCtxKey, logger)
@@ -33,14 +42,17 @@ type Logger interface {
 }
 
 type slogInpuLogger struct {
-	level  LogLevel
 	logger *slog.Logger
 }
 
 func NewLogger(level LogLevel) Logger {
+	lvl := new(slog.LevelVar)
+	lvl.Set(covertToSlogLevel(level))
+
 	return &slogInpuLogger{
-		level:  level,
-		logger: slog.New(slog.NewJSONHandler(os.Stdout, nil)),
+		logger: slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: lvl,
+		})),
 	}
 }
 
@@ -58,4 +70,19 @@ func (d *slogInpuLogger) Info(ctx context.Context, msg string, fields ...any) {
 
 func (d *slogInpuLogger) Debug(ctx context.Context, msg string, fields ...any) {
 	d.logger.DebugContext(ctx, fmt.Sprintf(msg, fields...))
+}
+
+func covertToSlogLevel(lvl LogLevel) slog.Level {
+	switch lvl {
+	case LogLevelError:
+		return slog.LevelError
+	case LogLevelInfo:
+		return slog.LevelInfo
+	case LogLevelDebug:
+		return slog.LevelDebug
+	case LogLevelWarn:
+		return slog.LevelWarn
+	}
+
+	return slog.LevelDebug
 }

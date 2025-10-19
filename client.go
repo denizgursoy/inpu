@@ -13,8 +13,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
-	"github.com/hashicorp/go-cleanhttp"
 )
 
 const (
@@ -40,7 +38,7 @@ type Client struct {
 func New() *Client {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	client := cleanhttp.DefaultPooledClient()
+	client := DefaultPooledClient()
 	transport := client.Transport.(*http.Transport)
 
 	return &Client{
@@ -463,7 +461,7 @@ func (c *Client) BasePath(basePath string) *Client {
 func (c *Client) prepareClientOnce() {
 	c.once.Do(func() {
 		if c.userClient.Transport == nil {
-			c.userClient.Transport = cleanhttp.DefaultPooledTransport()
+			c.userClient.Transport = DefaultPooledTransport()
 		}
 
 		transport, ok := c.userClient.Transport.(*http.Transport)

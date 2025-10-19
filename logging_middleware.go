@@ -12,21 +12,21 @@ import (
 var sensitiveHeaders = []string{HeaderAuthorization, HeaderAPISecret, HeaderAPIKey, HeaderAPIToken, HeaderCookie}
 
 // LogLevel represents the logging verbosity level
-type LogLevel int
+type LogerLevel int
 
 const (
-	LogLevelDisabled LogLevel = iota
+	LogLevelDisabled LogerLevel = iota
 	LogLevelSimple
 	LogLevelVerbose
 )
 
 type loggingMiddleware struct {
-	logLevel LogLevel
+	logLevel LogerLevel
 	next     http.RoundTripper
 }
 
 // LoggingMiddleware creates a logging middleware
-func LoggingMiddleware(logLevel LogLevel) Middleware {
+func LoggingMiddleware(logLevel LogerLevel) Middleware {
 	return &loggingMiddleware{
 		logLevel: logLevel,
 	}

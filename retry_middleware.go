@@ -1,19 +1,25 @@
 package inpu
 
 import (
+	"crypto/tls"
+	"errors"
 	"log"
 	"net/http"
+	"slices"
 	"time"
 )
 
+var retriableClientErrors = []int{http.StatusTooManyRequests}
+var nonRetriableServerErrors = []int{
+	http.StatusNotImplemented, http.StatusHTTPVersionNotSupported,
+	http.StatusLoopDetected, http.StatusVariantAlsoNegotiates,
+	http.StatusNetworkAuthenticationRequired}
+
 type RetryConfig struct {
-	MaxRetries     int
-	InitialBackoff time.Duration
-	MaxBackoff     time.Duration
-	// Multiplier for exponential backoff
+	MaxRetries        int
+	InitialBackoff    time.Duration
+	MaxBackoff        time.Duration
 	BackoffMultiplier float64
-	// Retry on these status codes
-	RetryStatusCodes map[int]bool
 }
 
 type retryMiddleware struct {
@@ -28,11 +34,6 @@ func RetryMiddleware(maxRetries int) Middleware {
 		InitialBackoff:    500 * time.Millisecond,
 		MaxBackoff:        30 * time.Second,
 		BackoffMultiplier: 2.0,
-		RetryStatusCodes: map[int]bool{
-			http.StatusTooManyRequests:    true, // 429
-			http.StatusServiceUnavailable: true, // 503
-			http.StatusGatewayTimeout:     true, // 504
-		},
 	})
 }
 
@@ -72,7 +73,7 @@ func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 		if !t.shouldRetry(resp, err, attempt) {
 			return resp, err
 		}
-
+		// TODO close body
 		// Don't sleep after last attempt
 		if attempt < t.config.MaxRetries {
 			// Check context cancellation
@@ -101,18 +102,31 @@ func (t *retryMiddleware) shouldRetry(resp *http.Response, err error, attempt in
 		return false
 	}
 
-	// Network error - retry
 	if err != nil {
-		return true
+		return checkRetryBasedOnConnectionError(err)
 	}
 
-	// Check if status code is retryable
-	if t.config.RetryStatusCodes[resp.StatusCode] {
-		return true
+	return checkRetryBasedOnStatusCode(resp)
+}
+
+func checkRetryBasedOnConnectionError(connectionError error) bool {
+	var certificateVerificationError *tls.CertificateVerificationError
+	if errors.As(connectionError, &certificateVerificationError) {
+		return false
 	}
 
-	// Default: retry on 5xx errors
-	if resp.StatusCode >= 500 {
+	return false
+}
+
+func checkRetryBasedOnStatusCode(response *http.Response) bool {
+	statusCode := response.StatusCode
+	if slices.Contains(retriableClientErrors, statusCode) {
+		return true
+	} else if slices.Contains(nonRetriableServerErrors, statusCode) {
+		return false
+	}
+
+	if statusCode >= http.StatusInternalServerError {
 		return true
 	}
 

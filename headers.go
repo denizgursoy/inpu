@@ -16,6 +16,9 @@ const (
 	HeaderAPISecret     = "X-Api-Secret"
 	HeaderAPIToken      = "X-Api-Token"
 
+	// Retry
+	HeaderRetryAfter = "Retry-After"
+
 	// Client identification
 	HeaderUserAgent = "User-Agent"
 	HeaderReferer   = "Referer"

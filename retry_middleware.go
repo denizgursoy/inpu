@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"slices"
+	"strconv"
 	"time"
 )
 
@@ -76,11 +77,13 @@ func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 		}
 		// Don't sleep after last attempt
 		if attempt < t.config.MaxRetries {
+			retryAfterDuration := t.extractBackoffFromHeader(resp)
+			timeToWait := favorRetryAfterValueIfNotEmpty(retryAfterDuration, backoff)
 			// Check context cancellation
 			select {
 			case <-req.Context().Done():
 				return resp, req.Context().Err()
-			case <-time.After(backoff):
+			case <-time.After(timeToWait):
 				logger.Info(ctx, "[RETRY] Attempt %d/%d for %s %s (waiting %v)", attempt+1, t.config.MaxRetries,
 					req.Method, req.URL, backoff)
 				// drain the body and close the connection because
@@ -90,13 +93,19 @@ func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 
 			// Exponential backoff
 			backoff = time.Duration(float64(backoff) * t.config.BackoffMultiplier)
-			if backoff > t.config.MaxBackoff {
-				backoff = t.config.MaxBackoff
-			}
+			backoff = t.getMaxBackoffTimeIfBigger(backoff)
 		}
 	}
 
 	return resp, err
+}
+
+func (t *retryMiddleware) getMaxBackoffTimeIfBigger(d time.Duration) time.Duration {
+	if d > t.config.MaxBackoff {
+		return t.config.MaxBackoff
+	}
+
+	return d
 }
 
 func (t *retryMiddleware) shouldRetry(resp *http.Response, err error, attempt int) bool {
@@ -146,4 +155,49 @@ func (t *retryMiddleware) cloneRequest(req *http.Request) *http.Request {
 	}
 
 	return clonedReq
+}
+
+func favorRetryAfterValueIfNotEmpty(retryAfter time.Duration, backoff time.Duration) time.Duration {
+	if retryAfter > 0 {
+		return retryAfter
+	}
+
+	return backoff
+}
+
+func (t *retryMiddleware) extractBackoffFromHeader(response *http.Response) time.Duration {
+	if response != nil {
+		if response.StatusCode == http.StatusTooManyRequests || response.StatusCode == http.StatusServiceUnavailable {
+			if sleep, ok := parseRetryAfterHeader(response.Header.Get(HeaderRetryAfter)); ok {
+				return t.getMaxBackoffTimeIfBigger(sleep)
+			}
+		}
+	}
+
+	return 0
+}
+
+func parseRetryAfterHeader(header string) (time.Duration, bool) {
+	if len(header) == 0 {
+		return 0, false
+	}
+	// Retry-After: 120
+	if sleep, err := strconv.ParseInt(header, 10, 64); err == nil {
+		if sleep < 0 { // a negative sleep doesn't make sense
+			return 0, false
+		}
+		return time.Second * time.Duration(sleep), true
+	}
+
+	// Retry-After: Fri, 31 Dec 1999 23:59:59 GMT
+	retryTime, err := http.ParseTime(header)
+	if err != nil {
+		return 0, false
+	}
+	if until := retryTime.Sub(time.Now()); until > 0 {
+		return until, true
+	}
+
+	// date is in the past
+	return 0, true
 }

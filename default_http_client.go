@@ -27,6 +27,7 @@ func DefaultTransport() *http.Transport {
 	transport := DefaultPooledTransport()
 	transport.DisableKeepAlives = true
 	transport.MaxIdleConnsPerHost = -1
+
 	return transport
 }
 
@@ -48,6 +49,7 @@ func DefaultPooledTransport() *http.Transport {
 		ForceAttemptHTTP2:     true,
 		MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
 	}
+
 	return transport
 }
 

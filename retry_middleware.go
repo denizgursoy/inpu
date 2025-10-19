@@ -64,7 +64,7 @@ func (t *retryMiddleware) Apply(next http.RoundTripper) http.RoundTripper {
 func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 	var err error
-	logger := FromContext(req.Context())
+	logger := GetLoggerFromContext(req.Context())
 	ctx := req.Context()
 
 	backoff := t.config.InitialBackoff

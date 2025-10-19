@@ -28,7 +28,7 @@ func TestNewInpuZeroLogger(t *testing.T) {
 		BasePath(server.URL).
 		UseMiddlewares(loggingMiddleware)
 
-	ctx := inpu.WithLogger(context.Background(), NewInpuZeroLogger())
+	ctx := inpu.ContextWithLogger(context.Background(), NewInpuZeroLogger())
 
 	err := client.PostCtx(ctx, "/", nil).
 		OnReply(inpu.StatusAnyExcept(http.StatusOK), inpu.ReturnError(errors.New("unexpected status"))).

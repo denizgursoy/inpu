@@ -51,7 +51,7 @@ func (t *loggingMiddleware) RoundTrip(req *http.Request) (*http.Response, error)
 		return t.next.RoundTrip(req)
 	}
 	ctx := req.Context()
-	logger := FromContext(ctx)
+	logger := GetLoggerFromContext(ctx)
 	start := time.Now()
 
 	// Log request

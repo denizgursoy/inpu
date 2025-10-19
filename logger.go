@@ -22,11 +22,11 @@ const (
 
 var defaultLogger = NewLogger(LogLevelInfo)
 
-func WithLogger(ctx context.Context, logger Logger) context.Context {
+func ContextWithLogger(ctx context.Context, logger Logger) context.Context {
 	return context.WithValue(ctx, loggerCtxKey, logger)
 }
 
-func FromContext(ctx context.Context) Logger {
+func GetLoggerFromContext(ctx context.Context) Logger {
 	logger, ok := ctx.Value(loggerCtxKey).(Logger)
 	if !ok {
 		return defaultLogger // fallback

@@ -26,7 +26,7 @@ type Client struct {
 	userClient      *http.Client
 	basePath        string
 	mws             []Middleware
-	once            sync.Once
+	clientInit      sync.Once
 	tlsConfig       *tls.Config
 	isHttp2Disabled bool
 	isTlsDisabled   bool
@@ -459,7 +459,7 @@ func (c *Client) BasePath(basePath string) *Client {
 }
 
 func (c *Client) prepareClientOnce() {
-	c.once.Do(func() {
+	c.clientInit.Do(func() {
 		if c.userClient.Transport == nil {
 			c.userClient.Transport = DefaultPooledTransport()
 		}

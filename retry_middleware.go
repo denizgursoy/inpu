@@ -3,7 +3,6 @@ package inpu
 import (
 	"crypto/tls"
 	"errors"
-	"log"
 	"net/http"
 	"slices"
 	"time"
@@ -61,6 +60,8 @@ func (t *retryMiddleware) Apply(next http.RoundTripper) http.RoundTripper {
 func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 	var err error
+	logger := FromContext(req.Context())
+	ctx := req.Context()
 
 	backoff := t.config.InitialBackoff
 
@@ -73,7 +74,6 @@ func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 		if !t.shouldRetry(resp, err, attempt) {
 			return resp, err
 		}
-		// TODO close body
 		// Don't sleep after last attempt
 		if attempt < t.config.MaxRetries {
 			// Check context cancellation
@@ -81,8 +81,11 @@ func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 			case <-req.Context().Done():
 				return resp, req.Context().Err()
 			case <-time.After(backoff):
-				log.Printf("[RETRY] Attempt %d/%d for %s %s (waiting %v)",
-					attempt+1, t.config.MaxRetries, req.Method, req.URL, backoff)
+				logger.Info(ctx, "[RETRY] Attempt %d/%d for %s %s (waiting %v)", attempt+1, t.config.MaxRetries,
+					req.Method, req.URL, backoff)
+				// drain the body and close the connection because
+				// it is going to send another request soon
+				DrainBodyAndClose(resp.Body)
 			}
 
 			// Exponential backoff

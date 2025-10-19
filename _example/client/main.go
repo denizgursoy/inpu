@@ -22,7 +22,7 @@ func main() {
 	client := inpu.
 		New().
 		BasePath("https://jsonplaceholder.typicode.com").
-		UseMiddlewares(inpu.LoggingMiddleware(true, false))
+		UseMiddlewares(inpu.LoggingMiddleware(inpu.LogLevelSimple))
 
 	filteredTodos := make([]ToDo, 0)
 	err := client.Get("/todos").

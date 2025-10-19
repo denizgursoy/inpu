@@ -3,7 +3,6 @@ package inpu
 import (
 	"bytes"
 	"io"
-	"log"
 	"net/http"
 	"slices"
 	"strings"
@@ -12,21 +11,16 @@ import (
 
 var sensitiveHeaders = []string{HeaderAuthorization, HeaderAPISecret, HeaderAPIKey, HeaderAPIToken, HeaderCookie}
 
-type Logger interface {
-	Printf(string, ...interface{})
-}
-
 // LogLevel represents the logging verbosity level
 type LogLevel int
 
 const (
 	LogLevelDisabled LogLevel = iota
-	LogLevelInfo
+	LogLevelSimple
 	LogLevelVerbose
 )
 
 type loggingMiddleware struct {
-	logger   Logger
 	logLevel LogLevel
 	next     http.RoundTripper
 }
@@ -35,7 +29,6 @@ type loggingMiddleware struct {
 func LoggingMiddleware(logLevel LogLevel) Middleware {
 	return &loggingMiddleware{
 		logLevel: logLevel,
-		logger:   log.Default(),
 	}
 }
 
@@ -57,19 +50,20 @@ func (t *loggingMiddleware) RoundTrip(req *http.Request) (*http.Response, error)
 	if t.logLevel == LogLevelDisabled {
 		return t.next.RoundTrip(req)
 	}
-
+	ctx := req.Context()
+	logger := FromContext(ctx)
 	start := time.Now()
 
 	// Log request
-	t.logger.Printf("→ [%s] %s", req.Method, req.URL.Redacted())
+	logger.Info(ctx, "→ [%s] %s", req.Method, req.URL.Redacted())
 
 	isVerbose := t.logLevel == LogLevelVerbose
 	if isVerbose {
-		t.logger.Printf("  Headers: %v", headersToString(req.Header))
+		logger.Info(ctx, "  Headers: %v", headersToString(req.Header))
 		if req.Body != nil {
 			body, _ := io.ReadAll(req.Body)
 			req.Body = io.NopCloser(bytes.NewBuffer(body))
-			t.logger.Printf("  Body: %s", string(body))
+			logger.Info(ctx, "  Body: %s", string(body))
 		}
 	}
 
@@ -79,19 +73,19 @@ func (t *loggingMiddleware) RoundTrip(req *http.Request) (*http.Response, error)
 
 	// Log response
 	if err != nil {
-		t.logger.Printf("← [%s] %s - ERROR: %v (took %v)", req.Method, req.URL.Redacted(), err, duration)
+		logger.Error(ctx, err, "← [%s] %s - ERROR: %v (took %v)", req.Method, req.URL.Redacted(), err, duration)
 
 		return resp, err
 	}
 
-	t.logger.Printf("← [%s] %s - Status: %d - Duration: %v", req.Method, req.URL.Redacted(), resp.StatusCode, duration)
+	logger.Info(ctx, "← [%s] %s - Status: %d - Duration: %v", req.Method, req.URL.Redacted(), resp.StatusCode, duration)
 
 	if isVerbose {
-		t.logger.Printf("  Response Headers: %v", headersToString(resp.Header))
+		logger.Info(ctx, "  Response Headers: %v", headersToString(resp.Header))
 		if resp.Body != nil {
 			body, _ := io.ReadAll(resp.Body)
 			resp.Body = io.NopCloser(bytes.NewBuffer(body))
-			t.logger.Printf("  Response Body: %s", string(body))
+			logger.Info(ctx, "  Response Body: %s", string(body))
 		}
 	}
 

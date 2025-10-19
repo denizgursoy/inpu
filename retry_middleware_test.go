@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"testing"
 )
@@ -107,4 +108,18 @@ func (c *ClientSuite) Test_No_Try_On_The_Non_Retriable_Server_Errors() {
 			c.Require().Equal(1, count)
 		})
 	}
+}
+
+func (c *ClientSuite) Test_UnsuccessfulRetryError() {
+	c.T().Parallel()
+	c.T().Log("should not panic because of nil response")
+	client := New().UseMiddlewares(RetryMiddleware(2))
+
+	err := client.Get("http://127.0.0.1:7777").
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		Send()
+
+	var urlError *url.Error
+	c.Require().ErrorAs(err, &urlError)
+	c.Require().ErrorIs(err, ErrConnectionFailed)
 }

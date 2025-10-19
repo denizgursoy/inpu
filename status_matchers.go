@@ -634,12 +634,14 @@ var StatusIsNetworkAuthenticationRequired = newStatusChecker(func(statusCode int
 	return statusCode == http.StatusNetworkAuthenticationRequired
 }, 1)
 
-func DrainBodyAndClose(body io.ReadCloser) error {
-	defer body.Close()
-	// Limit drain to prevent memory issues with huge responses
-	_, err := io.Copy(io.Discard, io.LimitReader(body, 1<<20)) // 1MB limit
-	if err != nil {
-		return err
+func DrainBodyAndClose(response *http.Response) error {
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+		// Limit drain to prevent memory issues with huge responses
+		_, err := io.Copy(io.Discard, io.LimitReader(response.Body, 1<<20)) // 1MB limit
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

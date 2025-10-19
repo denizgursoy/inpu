@@ -91,7 +91,7 @@ func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 					req.Method, req.URL, backoff)
 				// drain the body and close the connection because
 				// it is going to send another request soon
-				err := DrainBodyAndClose(resp.Body)
+				err := DrainBodyAndClose(resp)
 				if err != nil {
 					logger.Error(ctx, err, "could not drain the body")
 				}
@@ -133,7 +133,7 @@ func checkRetryBasedOnConnectionError(connectionError error) bool {
 		return false
 	}
 
-	return false
+	return true
 }
 
 func checkRetryBasedOnStatusCode(response *http.Response) bool {

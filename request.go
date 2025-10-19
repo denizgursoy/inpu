@@ -480,10 +480,10 @@ func (r *Req) Send() error {
 
 	httpResponse, err := client.Do(r.httpReq)
 	if err != nil {
-		return fmt.Errorf("%w,%w", ErrConnectionFailed, err)
+		return fmt.Errorf("%w: %w", ErrConnectionFailed, err)
 	}
 
-	defer DrainBodyAndClose(httpResponse.Body)
+	defer DrainBodyAndClose(httpResponse)
 
 	sort.SliceStable(r.replies, func(i, j int) bool {
 		return r.replies[i].statusMatcher.Priority() < r.replies[j].statusMatcher.Priority()

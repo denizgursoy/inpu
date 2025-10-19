@@ -8,7 +8,7 @@ import (
 var (
 	ErrRequestCreationFailed = errors.New("could not create the request")
 	ErrInvalidBody           = errors.New("could not create the body")
-	ErrConnectionFailed      = errors.New("could not send the request")
+	ErrConnectionFailed      = errors.New("connection failed")
 	ErrCouldNotParseBaseUrl  = errors.New("invalid base path")
 	ErrCouldNotParsePath     = errors.New("invalid path")
 	ErrMarshalToNil          = errors.New("cannot unmarshal to nil")

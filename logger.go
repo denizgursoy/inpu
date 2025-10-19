@@ -20,7 +20,7 @@ const (
 	LogLevelDebug
 )
 
-var defaultLogger = NewLogger(LogLevelInfo)
+var DefaultLogger = NewLogger(LogLevelInfo)
 
 func ContextWithLogger(ctx context.Context, logger Logger) context.Context {
 	return context.WithValue(ctx, loggerCtxKey, logger)
@@ -29,7 +29,7 @@ func ContextWithLogger(ctx context.Context, logger Logger) context.Context {
 func GetLoggerFromContext(ctx context.Context) Logger {
 	logger, ok := ctx.Value(loggerCtxKey).(Logger)
 	if !ok {
-		return defaultLogger // fallback
+		return DefaultLogger // fallback
 	}
 	return logger
 }

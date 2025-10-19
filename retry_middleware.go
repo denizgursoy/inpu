@@ -9,11 +9,14 @@ import (
 	"time"
 )
 
-var retriableClientErrors = []int{http.StatusTooManyRequests}
-var nonRetriableServerErrors = []int{
-	http.StatusNotImplemented, http.StatusHTTPVersionNotSupported,
-	http.StatusLoopDetected, http.StatusVariantAlsoNegotiates,
-	http.StatusNetworkAuthenticationRequired}
+var (
+	retriableClientErrors    = []int{http.StatusTooManyRequests}
+	nonRetriableServerErrors = []int{
+		http.StatusNotImplemented, http.StatusHTTPVersionNotSupported,
+		http.StatusLoopDetected, http.StatusVariantAlsoNegotiates,
+		http.StatusNetworkAuthenticationRequired,
+	}
+)
 
 type RetryConfig struct {
 	MaxRetries        int
@@ -88,7 +91,10 @@ func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 					req.Method, req.URL, backoff)
 				// drain the body and close the connection because
 				// it is going to send another request soon
-				DrainBodyAndClose(resp.Body)
+				err := DrainBodyAndClose(resp.Body)
+				if err != nil {
+					logger.Error(ctx, err, "could not drain the body")
+				}
 			}
 
 			// Exponential backoff

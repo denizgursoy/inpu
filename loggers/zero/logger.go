@@ -11,8 +11,7 @@ func NewInpuZeroLogger() inpu.Logger {
 	return &inpuZeroLogger{}
 }
 
-type inpuZeroLogger struct {
-}
+type inpuZeroLogger struct{}
 
 func (i *inpuZeroLogger) Error(ctx context.Context, err error, msg string, fields ...any) {
 	log.Ctx(ctx).Error().Err(err).Msgf(msg, fields...)

@@ -33,7 +33,6 @@ func TestNewInpuZeroLogger(t *testing.T) {
 	err := client.PostCtx(ctx, "/", nil).
 		OnReply(inpu.StatusAnyExcept(http.StatusOK), inpu.ReturnError(errors.New("unexpected status"))).
 		Send()
-
 	if err != nil {
 		t.FailNow()
 	}

@@ -157,3 +157,34 @@ func (c *ClientSuite) Test_Wait_By_Retry_After_Value() {
 	c.Require().Equal(2, count)
 	c.Require().InDelta(duration, 2*time.Second, float64(time.Millisecond)*100)
 }
+
+func (c *ClientSuite) Test_Custom_Retry_Function() {
+	c.T().Parallel()
+	count := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		count++
+		w.WriteHeader(http.StatusOK)
+
+		return
+	}))
+
+	defer server.Close()
+
+	client := New().UseMiddlewares(RetryMiddlewareWithConfig(RetryConfig{
+		MaxRetries:        2,
+		InitialBackoff:    500 * time.Millisecond,
+		MaxBackoff:        30 * time.Second,
+		BackoffMultiplier: 2,
+		CustomRetryChecker: func(resp *http.Response, err error) bool {
+			return resp.StatusCode == http.StatusOK
+		},
+	}))
+
+	err := client.
+		Get(server.URL).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		Send()
+
+	c.Require().NoError(err)
+	c.Require().Equal(3, count)
+}

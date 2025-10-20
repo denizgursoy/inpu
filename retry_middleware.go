@@ -18,11 +18,14 @@ var (
 	}
 )
 
+type CustomRetryChecker func(resp *http.Response, err error) bool
+
 type RetryConfig struct {
-	MaxRetries        int
-	InitialBackoff    time.Duration
-	MaxBackoff        time.Duration
-	BackoffMultiplier float64
+	MaxRetries         int
+	InitialBackoff     time.Duration
+	MaxBackoff         time.Duration
+	BackoffMultiplier  float64
+	CustomRetryChecker CustomRetryChecker
 }
 
 type retryMiddleware struct {
@@ -118,6 +121,11 @@ func (t *retryMiddleware) shouldRetry(resp *http.Response, err error, attempt in
 	// No more retries left
 	if attempt >= t.config.MaxRetries {
 		return false
+	}
+	if t.config.CustomRetryChecker != nil {
+		if t.config.CustomRetryChecker(resp, err) {
+			return true
+		}
 	}
 
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func (c *ClientSuite) Test_RetryMiddleware() {
@@ -122,4 +123,37 @@ func (c *ClientSuite) Test_UnsuccessfulRetryError() {
 	var urlError *url.Error
 	c.Require().ErrorAs(err, &urlError)
 	c.Require().ErrorIs(err, ErrConnectionFailed)
+}
+
+func (c *ClientSuite) Test_Wait_By_Retry_After_Value() {
+	c.T().Parallel()
+	count := 0
+	var startTime time.Time
+	var duration time.Duration
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		count++
+		if count == 1 {
+			startTime = time.Now()
+			w.Header().Add(HeaderRetryAfter, "2")
+			w.WriteHeader(http.StatusTooManyRequests)
+		} else if count == 2 {
+			duration = time.Since(startTime)
+			w.WriteHeader(http.StatusOK)
+		}
+		return
+	}))
+
+	defer server.Close()
+
+	client := New().UseMiddlewares(RetryMiddleware(2))
+
+	err := client.
+		Get(server.URL).
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		Send()
+
+	c.T().Logf("duration is %s", duration)
+	c.Require().NoError(err)
+	c.Require().Equal(2, count)
+	c.Require().InDelta(duration, 2*time.Second, float64(time.Millisecond)*100)
 }

@@ -88,7 +88,7 @@ func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 				return resp, req.Context().Err()
 			case <-time.After(timeToWait):
 				logger.Info(ctx, "[RETRY] Attempt %d/%d for %s %s (waiting %v)", attempt+1, t.config.MaxRetries,
-					req.Method, req.URL, backoff)
+					req.Method, req.URL.Redacted(), timeToWait)
 				// drain the body and close the connection because
 				// it is going to send another request soon
 				err := DrainBodyAndClose(resp)

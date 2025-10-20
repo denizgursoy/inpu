@@ -504,6 +504,7 @@ func getBasicAuthHeaderValue(username, password string) string {
 // Close closes all idle connections and cleans up resources.
 // Call this when you're done using the client.
 // After calling Close, the client should not be reused.
+// It also cancels all the requests done via Get, Post, Put, Head, Patch, Delete, in short, methods without context.
 func (c *Client) Close() {
 	if c.cancel != nil {
 		c.cancel()

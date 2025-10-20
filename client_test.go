@@ -342,6 +342,42 @@ func (c *ClientSuite) Test_Client_Close() {
 	c.Require().ErrorIs(err, context.Canceled)
 }
 
+func (c *ClientSuite) Test_Client_Cookie() {
+	// Test server that sets a cookie and then checks it on a subsequent request.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/set":
+			http.SetCookie(w, &http.Cookie{
+				Name:  "session_id",
+				Value: "abc123",
+				Path:  "/",
+			})
+			w.WriteHeader(http.StatusOK)
+		case "/check":
+			// Expect cookie to be sent by the client
+			c, err := r.Cookie("session_id")
+			if err != nil || c.Value != "abc123" {
+				http.Error(w, "cookie not present or wrong", http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := New().EnableCookies()
+	err := client.Get(server.URL + "/set").Send()
+	c.Require().NoError(err)
+
+	// Second request: server should see the cookie sent by the client
+	err = client.Get(server.URL+"/check").
+		OnReply(StatusAnyExcept(http.StatusOK), ReturnDefaultError).
+		Send()
+	c.Require().NoError(err)
+}
+
 // Measure allocations
 func Benchmark_QueryBuild(b *testing.B) {
 	b.ResetTimer()

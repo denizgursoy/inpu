@@ -12,23 +12,18 @@ import (
 var sensitiveHeaders = []string{HeaderAuthorization, HeaderAPISecret, HeaderAPIKey, HeaderAPIToken, HeaderCookie}
 
 // LogLevel represents the logging verbosity level
-type LogerLevel int
-
-const (
-	LogLevelDisabled LogerLevel = iota
-	LogLevelSimple
-	LogLevelVerbose
-)
 
 type loggingMiddleware struct {
-	logLevel LogerLevel
+	verbose  bool
+	disabled bool
 	next     http.RoundTripper
 }
 
 // LoggingMiddleware creates a logging middleware
-func LoggingMiddleware(logLevel LogerLevel) Middleware {
+func LoggingMiddleware(verbose, disabled bool) Middleware {
 	return &loggingMiddleware{
-		logLevel: logLevel,
+		verbose:  verbose,
+		disabled: disabled,
 	}
 }
 
@@ -47,7 +42,7 @@ func (t *loggingMiddleware) Apply(next http.RoundTripper) http.RoundTripper {
 }
 
 func (t *loggingMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
-	if t.logLevel == LogLevelDisabled {
+	if t.disabled {
 		return t.next.RoundTrip(req)
 	}
 	ctx := req.Context()
@@ -57,8 +52,7 @@ func (t *loggingMiddleware) RoundTrip(req *http.Request) (*http.Response, error)
 	// Log request
 	logger.Info(ctx, "→ [%s] %s", req.Method, req.URL.Redacted())
 
-	isVerbose := t.logLevel == LogLevelVerbose
-	if isVerbose {
+	if t.verbose {
 		logger.Info(ctx, "  Headers: %v", headersToString(req.Header))
 		if req.Body != nil {
 			body, _ := io.ReadAll(req.Body)
@@ -80,7 +74,7 @@ func (t *loggingMiddleware) RoundTrip(req *http.Request) (*http.Response, error)
 
 	logger.Info(ctx, "← [%s] %s - Status: %d - Duration: %v", req.Method, req.URL.Redacted(), resp.StatusCode, duration)
 
-	if isVerbose {
+	if t.verbose {
 		logger.Info(ctx, "  Response Headers: %v", headersToString(resp.Header))
 		if resp.Body != nil {
 			body, _ := io.ReadAll(resp.Body)

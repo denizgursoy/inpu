@@ -18,7 +18,7 @@ func (c *ClientSuite) Test_LoggingMiddleware_Level_info() {
 	}))
 	defer server.Close()
 
-	lgMiddleware := LoggingMiddleware(LogLevelSimple)
+	lgMiddleware := LoggingMiddleware(false, false)
 	logger := newStringBufferLogger()
 	ctx := ContextWithLogger(context.Background(), logger)
 
@@ -64,7 +64,7 @@ func (c *ClientSuite) Test_LoggingMiddleware() {
 	}))
 	defer server.Close()
 
-	lgMiddleware := LoggingMiddleware(LogLevelVerbose)
+	lgMiddleware := LoggingMiddleware(true, false)
 	logger := newStringBufferLogger()
 	ctx := ContextWithLogger(context.Background(), logger)
 
@@ -109,7 +109,7 @@ func (c *ClientSuite) Test_LoggingMiddleware_Disabled() {
 	}))
 	defer server.Close()
 
-	lgMiddleware := LoggingMiddleware(LogLevelDisabled)
+	lgMiddleware := LoggingMiddleware(false, true)
 	logger := newStringBufferLogger()
 	ctx := ContextWithLogger(context.Background(), logger)
 

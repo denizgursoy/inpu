@@ -19,14 +19,28 @@ type ClientCredentialsMiddleware struct {
 	next         http.RoundTripper
 }
 
-func NewClientCredentialsMiddleware(cfg *clientcredentials.Config) *ClientCredentialsMiddleware {
+type ClientCredentialsConfig struct {
+	ClientID     string
+	ClientSecret string
+	TokenURL     string
+	Scopes       []string
+}
+
+func NewClientCredentialsMiddleware(config ClientCredentialsConfig) *ClientCredentialsMiddleware {
+	ccConfig := &clientcredentials.Config{
+		ClientID:     config.ClientID,
+		ClientSecret: config.ClientSecret,
+		TokenURL:     config.TokenURL,
+		Scopes:       config.Scopes,
+	}
+
 	return &ClientCredentialsMiddleware{
-		tokenSource: cfg.TokenSource(context.Background()),
+		tokenSource: ccConfig.TokenSource(context.Background()),
 	}
 }
 
 func (m *ClientCredentialsMiddleware) ID() string {
-	return "oauth-client-secret"
+	return "oauth-client-secret-middleware"
 }
 
 func (m *ClientCredentialsMiddleware) Priority() int {
@@ -45,7 +59,7 @@ func (m *ClientCredentialsMiddleware) RoundTrip(request *http.Request) (*http.Re
 		return nil, fmt.Errorf("failed to get oauth2 token: %w", err)
 	}
 
-	request.Header.Set(inpu.HeaderAuthorization, fmt.Sprintf("Bearer %s", token.AccessToken))
+	request.Header.Set(inpu.HeaderAuthorization, inpu.GetTokenHeaderValue(token.AccessToken))
 
 	return m.next.RoundTrip(request)
 }

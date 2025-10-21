@@ -68,6 +68,7 @@ func (m *ClientCredentialsMiddleware) getValidToken() (*oauth2.Token, error) {
 	m.mu.RLock()
 	if m.token != nil && m.token.Valid() {
 		defer m.mu.RUnlock()
+
 		return m.token, nil
 	}
 	m.mu.RUnlock()
@@ -75,30 +76,14 @@ func (m *ClientCredentialsMiddleware) getValidToken() (*oauth2.Token, error) {
 	m.refreshMutex.Lock()
 	defer m.refreshMutex.Unlock()
 
-	m.mu.RLock()
-	if m.token != nil && m.token.Valid() {
-		defer m.mu.RUnlock()
-		return m.token, nil
-	}
-	m.mu.RUnlock()
-
 	token, err := m.tokenSource.Token()
 	if err != nil {
 		return nil, err
 	}
 
 	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.token = token
-	m.mu.Unlock()
 
 	return token, nil
-}
-
-func (m *ClientCredentialsMiddleware) GetToken() (*oauth2.Token, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	if m.token == nil {
-		return nil, fmt.Errorf("no token available")
-	}
-	return m.token, nil
 }

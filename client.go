@@ -244,13 +244,13 @@ func (c *Client) ContentType(contentType string) *Client {
 }
 
 func (c *Client) AuthBasic(username, password string) *Client {
-	c.addHeader(HeaderAuthorization, getBasicAuthHeaderValue(username, password))
+	c.addHeader(HeaderAuthorization, GetBasicAuthHeaderValue(username, password))
 
 	return c
 }
 
 func (c *Client) AuthToken(token string) *Client {
-	c.addHeader(HeaderAuthorization, getTokenHeaderValue(token))
+	c.addHeader(HeaderAuthorization, GetTokenHeaderValue(token))
 
 	return c
 }
@@ -491,11 +491,11 @@ func (c *Client) prepareClientOnce() {
 	})
 }
 
-func getTokenHeaderValue(token string) string {
+func GetTokenHeaderValue(token string) string {
 	return BearerAuthentication + token
 }
 
-func getBasicAuthHeaderValue(username, password string) string {
+func GetBasicAuthHeaderValue(username, password string) string {
 	cred := username + ":" + password
 
 	return BasicAuthentication + base64.StdEncoding.EncodeToString([]byte(cred))

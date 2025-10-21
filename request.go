@@ -226,13 +226,13 @@ func (r *Req) ContentType(contentType string) *Req {
 }
 
 func (r *Req) AuthBasic(username, password string) *Req {
-	r.addHeader(HeaderAuthorization, getBasicAuthHeaderValue(username, password))
+	r.addHeader(HeaderAuthorization, GetBasicAuthHeaderValue(username, password))
 
 	return r
 }
 
 func (r *Req) AuthToken(token string) *Req {
-	r.addHeader(HeaderAuthorization, getTokenHeaderValue(token))
+	r.addHeader(HeaderAuthorization, GetTokenHeaderValue(token))
 
 	return r
 }

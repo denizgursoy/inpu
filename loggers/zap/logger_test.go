@@ -1,33 +1,31 @@
-package zero
+package zap
 
 import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/denizgursoy/inpu"
-	"github.com/rs/zerolog"
+	"go.uber.org/zap"
 )
 
-func TestNewInpuZeroLogger(t *testing.T) {
+func TestNewInpuZapLogger(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`test`))
 	}))
 	defer server.Close()
-	
-	logx := zerolog.New(os.Stdout).With().Timestamp().Logger()
-	zerolog.DefaultContextLogger = &logx
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
 
 	loggingMiddleware := inpu.LoggingMiddleware(true, false)
 	client := inpu.New().
 		BasePath(server.URL).
 		UseMiddlewares(loggingMiddleware)
 
-	inpu.DefaultLogger = NewInpuZeroLogger()
+	inpu.DefaultLogger = NewInpuZapLogger(logger)
 
 	err := client.Post("/", nil).
 		OnReply(inpu.StatusAnyExcept(http.StatusOK), inpu.ReturnError(errors.New("unexpected status"))).

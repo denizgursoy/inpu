@@ -42,9 +42,10 @@ func main() {
 		Title:     "",
 		Completed: true,
 	}
+	createdToDo := CreatedTodo{}
 	err = client.
 		Post("/todos", inpu.BodyJson(newTodo)).
-		OnReply(inpu.StatusIsSuccess, inpu.UnmarshalJson(&newTodo)).
+		OnReply(inpu.StatusIsOk, inpu.UnmarshalJson(&createdToDo)).
 		Send()
 	if err != nil {
 		log.Fatal(err)

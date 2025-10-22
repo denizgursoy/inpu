@@ -43,9 +43,7 @@ func ReturnError(err error) ResponseHandler {
 // OnReply(StatusAny, ReturnDefaultError)
 func ReturnDefaultError(r *http.Response) error {
 	return &DefaultError{
-		Method:     r.Request.Method,
-		URL:        r.Request.URL.Redacted(),
-		StatusCode: r.StatusCode,
+		res: r,
 	}
 }
 

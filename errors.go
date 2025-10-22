@@ -3,6 +3,7 @@ package inpu
 import (
 	"errors"
 	"fmt"
+	"net/http"
 )
 
 var (
@@ -16,11 +17,10 @@ var (
 )
 
 type DefaultError struct {
-	Method     string
-	URL        string
-	StatusCode int
+	res *http.Response
 }
 
 func (d *DefaultError) Error() string {
-	return fmt.Sprintf("called [%s] -> %s and got %d", d.Method, d.URL, d.StatusCode)
+	return fmt.Sprintf("called [%s] -> %s and got %d",
+		d.res.Request.Method, d.res.Request.URL.Redacted(), d.res.StatusCode)
 }

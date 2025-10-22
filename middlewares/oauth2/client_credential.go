@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/denizgursoy/inpu"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -18,7 +19,7 @@ type ClientCredentialsMiddleware struct {
 	next         http.RoundTripper
 }
 
-func NewClientCredentialsMiddleware(config clientcredentials.Config) *ClientCredentialsMiddleware {
+func NewClientCredentialsMiddleware(config clientcredentials.Config) inpu.Middleware {
 	return &ClientCredentialsMiddleware{
 		tokenSource: config.TokenSource(context.Background()),
 	}

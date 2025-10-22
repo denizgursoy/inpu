@@ -637,7 +637,7 @@ var StatusIsNetworkAuthenticationRequired = newStatusChecker(func(statusCode int
 func DrainBodyAndClose(response *http.Response) error {
 	if response != nil && response.Body != nil {
 		ctx := response.Request.Context()
-		logger := GetLoggerFromContext(ctx)
+		logger := ExtractLoggerFromContext(ctx)
 		defer func() {
 			if err := response.Body.Close(); err != nil {
 				logger.Error(ctx, err, "could not close the body")

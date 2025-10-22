@@ -7,6 +7,11 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	ContextKeyRequestID = "inpu_request_id"
+	ContextKeyLogger    = "inpu_logger"
+)
+
 type customMiddleware struct {
 	requestModifier  RequestModifier
 	responseModifier ResponseModifier
@@ -41,7 +46,7 @@ func ResponseModifierMiddleware(modifier ResponseModifier, middlewareID string, 
 func RequestIDMiddleware() Middleware {
 	return RequestModifierMiddleware(func(req *http.Request) {
 		requestID := uuid.New().String()
-		ctx := context.WithValue(req.Context(), "request_id", requestID)
+		ctx := context.WithValue(req.Context(), ContextKeyRequestID, requestID)
 
 		req = req.WithContext(ctx)
 		req.Header.Set(HeaderXRequestID, requestID)
@@ -86,4 +91,13 @@ func (t *customMiddleware) RoundTrip(req *http.Request) (*http.Response, error) 
 	}
 
 	return resp, err
+}
+
+func ExtractRequestIDFromContext(ctx context.Context) *string {
+	requestID, ok := ctx.Value(ContextKeyRequestID).(string)
+	if !ok {
+		return nil
+	}
+
+	return &requestID
 }

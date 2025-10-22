@@ -7,9 +7,7 @@ import (
 	"os"
 )
 
-type ctxKey string
-
-const loggerCtxKey ctxKey = "inpu_logger"
+const LoggerKeyRequestID = "request_id"
 
 type LogLevel int
 
@@ -23,11 +21,11 @@ const (
 var DefaultLogger = NewLogger(LogLevelInfo)
 
 func ContextWithLogger(ctx context.Context, logger Logger) context.Context {
-	return context.WithValue(ctx, loggerCtxKey, logger)
+	return context.WithValue(ctx, ContextKeyLogger, logger)
 }
 
-func GetLoggerFromContext(ctx context.Context) Logger {
-	logger, ok := ctx.Value(loggerCtxKey).(Logger)
+func ExtractLoggerFromContext(ctx context.Context) Logger {
+	logger, ok := ctx.Value(ContextKeyLogger).(Logger)
 	if !ok {
 		return DefaultLogger // fallback
 	}
@@ -57,19 +55,40 @@ func NewLogger(level LogLevel) Logger {
 }
 
 func (d *slogInpuLogger) Error(ctx context.Context, err error, msg string, fields ...any) {
-	d.logger.ErrorContext(ctx, fmt.Sprintf(msg, fields...), "error", err)
+	requestID := ExtractRequestIDFromContext(ctx)
+
+	if requestID != nil {
+		d.logger.ErrorContext(ctx, fmt.Sprintf(msg, fields...), "error", err, LoggerKeyRequestID, requestID)
+	} else {
+		d.logger.ErrorContext(ctx, fmt.Sprintf(msg, fields...), "error", err)
+	}
 }
 
 func (d *slogInpuLogger) Warn(ctx context.Context, msg string, fields ...any) {
-	d.logger.WarnContext(ctx, fmt.Sprintf(msg, fields...))
+	requestID := ExtractRequestIDFromContext(ctx)
+	if requestID != nil {
+		d.logger.WarnContext(ctx, fmt.Sprintf(msg, fields...), LoggerKeyRequestID, requestID)
+	} else {
+		d.logger.WarnContext(ctx, fmt.Sprintf(msg, fields...))
+	}
 }
 
 func (d *slogInpuLogger) Info(ctx context.Context, msg string, fields ...any) {
-	d.logger.InfoContext(ctx, fmt.Sprintf(msg, fields...))
+	requestID := ExtractRequestIDFromContext(ctx)
+	if requestID != nil {
+		d.logger.InfoContext(ctx, fmt.Sprintf(msg, fields...), LoggerKeyRequestID, requestID)
+	} else {
+		d.logger.InfoContext(ctx, fmt.Sprintf(msg, fields...))
+	}
 }
 
 func (d *slogInpuLogger) Debug(ctx context.Context, msg string, fields ...any) {
-	d.logger.DebugContext(ctx, fmt.Sprintf(msg, fields...))
+	requestID := ExtractRequestIDFromContext(ctx)
+	if requestID != nil {
+		d.logger.DebugContext(ctx, fmt.Sprintf(msg, fields...), LoggerKeyRequestID, requestID)
+	} else {
+		d.logger.DebugContext(ctx, fmt.Sprintf(msg, fields...))
+	}
 }
 
 func covertToSlogLevel(lvl LogLevel) slog.Level {

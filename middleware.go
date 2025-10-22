@@ -9,7 +9,7 @@ type Middleware interface {
 }
 
 type (
-	RequestModifier  func(request *http.Request)
+	RequestModifier  func(request *http.Request) (*http.Request, error)
 	ResponseModifier func(response *http.Response, server error) (*http.Response, error)
 	ErrorHandler     func(serverError error) error
 )

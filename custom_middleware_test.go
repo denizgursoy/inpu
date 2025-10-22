@@ -20,11 +20,13 @@ func (c *ClientSuite) Test_RequestModifierMiddleware() {
 	defer server.Close()
 
 	client := New().
-		UseMiddlewares(RequestModifierMiddleware(func(request *http.Request) {
+		UseMiddlewares(RequestModifierMiddleware(func(request *http.Request) (*http.Request, error) {
 			request.Header.Add("foo", "bar")
 			query := request.URL.Query()
 			query.Add("foo1", "bar1")
 			request.URL.RawQuery = query.Encode()
+
+			return request, nil
 		}, "test-middleware", 99))
 
 	err := client.

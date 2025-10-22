@@ -44,12 +44,14 @@ func ResponseModifierMiddleware(modifier ResponseModifier, middlewareID string, 
 
 // RequestIDMiddleware add HeaderXRequestID to every request
 func RequestIDMiddleware() Middleware {
-	return RequestModifierMiddleware(func(req *http.Request) {
+	return RequestModifierMiddleware(func(req *http.Request) (*http.Request, error) {
 		requestID := uuid.New().String()
 		ctx := context.WithValue(req.Context(), ContextKeyRequestID, requestID)
 
 		req = req.WithContext(ctx)
 		req.Header.Set(HeaderXRequestID, requestID)
+
+		return req, nil
 	}, "request-modifier-middleware", 100)
 }
 
@@ -80,7 +82,11 @@ func (t *customMiddleware) Apply(next http.RoundTripper) http.RoundTripper {
 
 func (t *customMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.requestModifier != nil {
-		t.requestModifier(req)
+		modifiedRequest, err := t.requestModifier(req)
+		if err != nil {
+			return nil, err
+		}
+		req = modifiedRequest
 	}
 
 	// Execute request

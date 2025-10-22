@@ -25,7 +25,7 @@ func TestNewInpuZapLogger(t *testing.T) {
 		BasePath(server.URL).
 		UseMiddlewares(loggingMiddleware)
 
-	inpu.DefaultLogger = NewInpuZapLogger(logger)
+	inpu.DefaultLogger = NewInpuLoggerFromZapLogger(logger)
 
 	err := client.Post("/", nil).
 		OnReply(inpu.StatusAnyExcept(http.StatusOK), inpu.ReturnError(errors.New("unexpected status"))).

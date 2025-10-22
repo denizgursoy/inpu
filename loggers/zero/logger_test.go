@@ -17,7 +17,7 @@ func TestNewInpuZeroLogger(t *testing.T) {
 		w.Write([]byte(`test`))
 	}))
 	defer server.Close()
-	
+
 	logx := zerolog.New(os.Stdout).With().Timestamp().Logger()
 	zerolog.DefaultContextLogger = &logx
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
@@ -27,7 +27,7 @@ func TestNewInpuZeroLogger(t *testing.T) {
 		BasePath(server.URL).
 		UseMiddlewares(loggingMiddleware)
 
-	inpu.DefaultLogger = NewInpuZeroLogger()
+	inpu.DefaultLogger = NewInpuLoggerFromZeroLog()
 
 	err := client.Post("/", nil).
 		OnReply(inpu.StatusAnyExcept(http.StatusOK), inpu.ReturnError(errors.New("unexpected status"))).

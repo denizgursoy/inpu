@@ -3,6 +3,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/denizgursoy/inpu v1.2.0 h1:+kB3rb9+OzXNyNyWbSK2ubeF8ldb5tWE2KpR/Xwc498=
 github.com/denizgursoy/inpu v1.2.0/go.mod h1:PfNTWQaB5Ra7dXJ+pOnDP/4/FcGEi3On1cK/z3BGSNQ=
+github.com/denizgursoy/inpu v1.2.1-0.20251022183036-c9d3395551a4 h1:9zxxUMb27d7y+pFXiHZfECUl3I5/3w/vDdVb9rTNZfM=
+github.com/denizgursoy/inpu v1.2.1-0.20251022183036-c9d3395551a4/go.mod h1:PfNTWQaB5Ra7dXJ+pOnDP/4/FcGEi3On1cK/z3BGSNQ=
 github.com/godbus/dbus/v5 v5.0.4/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=

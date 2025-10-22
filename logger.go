@@ -18,7 +18,7 @@ const (
 	LogLevelDebug
 )
 
-var DefaultLogger = NewLogger(LogLevelInfo)
+var DefaultLogger = NewInpuLoggerFromSlog(LogLevelInfo)
 
 func ContextWithLogger(ctx context.Context, logger Logger) context.Context {
 	return context.WithValue(ctx, ContextKeyLogger, logger)
@@ -43,7 +43,7 @@ type slogInpuLogger struct {
 	logger *slog.Logger
 }
 
-func NewLogger(level LogLevel) Logger {
+func NewInpuLoggerFromSlog(level LogLevel) Logger {
 	lvl := new(slog.LevelVar)
 	lvl.Set(covertToSlogLevel(level))
 
@@ -56,9 +56,8 @@ func NewLogger(level LogLevel) Logger {
 
 func (d *slogInpuLogger) Error(ctx context.Context, err error, msg string, fields ...any) {
 	requestID := ExtractRequestIDFromContext(ctx)
-
 	if requestID != nil {
-		d.logger.ErrorContext(ctx, fmt.Sprintf(msg, fields...), "error", err, LoggerKeyRequestID, requestID)
+		d.logger.ErrorContext(ctx, fmt.Sprintf(msg, fields...), "error", err, LoggerKeyRequestID, *requestID)
 	} else {
 		d.logger.ErrorContext(ctx, fmt.Sprintf(msg, fields...), "error", err)
 	}
@@ -67,7 +66,7 @@ func (d *slogInpuLogger) Error(ctx context.Context, err error, msg string, field
 func (d *slogInpuLogger) Warn(ctx context.Context, msg string, fields ...any) {
 	requestID := ExtractRequestIDFromContext(ctx)
 	if requestID != nil {
-		d.logger.WarnContext(ctx, fmt.Sprintf(msg, fields...), LoggerKeyRequestID, requestID)
+		d.logger.WarnContext(ctx, fmt.Sprintf(msg, fields...), LoggerKeyRequestID, *requestID)
 	} else {
 		d.logger.WarnContext(ctx, fmt.Sprintf(msg, fields...))
 	}
@@ -76,7 +75,7 @@ func (d *slogInpuLogger) Warn(ctx context.Context, msg string, fields ...any) {
 func (d *slogInpuLogger) Info(ctx context.Context, msg string, fields ...any) {
 	requestID := ExtractRequestIDFromContext(ctx)
 	if requestID != nil {
-		d.logger.InfoContext(ctx, fmt.Sprintf(msg, fields...), LoggerKeyRequestID, requestID)
+		d.logger.InfoContext(ctx, fmt.Sprintf(msg, fields...), LoggerKeyRequestID, *requestID)
 	} else {
 		d.logger.InfoContext(ctx, fmt.Sprintf(msg, fields...))
 	}
@@ -85,7 +84,7 @@ func (d *slogInpuLogger) Info(ctx context.Context, msg string, fields ...any) {
 func (d *slogInpuLogger) Debug(ctx context.Context, msg string, fields ...any) {
 	requestID := ExtractRequestIDFromContext(ctx)
 	if requestID != nil {
-		d.logger.DebugContext(ctx, fmt.Sprintf(msg, fields...), LoggerKeyRequestID, requestID)
+		d.logger.DebugContext(ctx, fmt.Sprintf(msg, fields...), LoggerKeyRequestID, *requestID)
 	} else {
 		d.logger.DebugContext(ctx, fmt.Sprintf(msg, fields...))
 	}

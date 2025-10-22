@@ -145,6 +145,10 @@ func checkRetryBasedOnConnectionError(connectionError error) bool {
 }
 
 func checkRetryBasedOnStatusCode(response *http.Response) bool {
+	if response == nil {
+		return false
+	}
+
 	statusCode := response.StatusCode
 	if slices.Contains(retriableClientErrors, statusCode) {
 		return true

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/denizgursoy/inpu"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 func TestClientCredentialsMiddleware(t *testing.T) {
@@ -30,7 +31,7 @@ func TestClientCredentialsMiddleware(t *testing.T) {
 	}))
 	defer apiServer.Close()
 
-	config := ClientCredentialsConfig{
+	config := clientcredentials.Config{
 		ClientID:     "test-client",
 		ClientSecret: "test-secret",
 		TokenURL:     tokenServer.URL + "/token",

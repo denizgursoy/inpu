@@ -15,7 +15,7 @@ err :=  inpu.Get("https://jsonplaceholder.typicode.com/todos").
 ```
 Does the following call
 ```
-https://jsonplaceholder.typicode.com/todos?completed=1&userId=bar1 
+https://jsonplaceholder.typicode.com/todos?completed=true&userId=2
 ```
 It will marshal the response body to `filteredTodos` if status code `200`. If response code anything except `200`, It will
 return `called [GET] -> https://jsonplaceholder.typicode.com/todos?completed=true&userId=2 and got 500` error to provide more information.

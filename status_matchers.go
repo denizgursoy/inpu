@@ -636,10 +636,18 @@ var StatusIsNetworkAuthenticationRequired = newStatusChecker(func(statusCode int
 
 func DrainBodyAndClose(response *http.Response) error {
 	if response != nil && response.Body != nil {
-		defer response.Body.Close()
+		ctx := response.Request.Context()
+		logger := GetLoggerFromContext(ctx)
+		defer func() {
+			if err := response.Body.Close(); err != nil {
+				logger.Error(ctx, err, "could not close the body")
+			}
+		}()
 		// Limit drain to prevent memory issues with huge responses
 		_, err := io.Copy(io.Discard, io.LimitReader(response.Body, 1<<20)) // 1MB limit
 		if err != nil {
+			logger.Error(ctx, err, "could not drain the body")
+
 			return err
 		}
 	}

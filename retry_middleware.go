@@ -94,10 +94,8 @@ func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 					req.Method, req.URL.Redacted(), timeToWait)
 				// drain the body and close the connection because
 				// it is going to send another request soon
-				err := DrainBodyAndClose(resp)
-				if err != nil {
-					logger.Error(ctx, err, "could not drain the body")
-				}
+				// error is already logged
+				DrainBodyAndClose(resp)
 			}
 
 			// Exponential backoff

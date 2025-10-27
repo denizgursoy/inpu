@@ -23,8 +23,8 @@ return `called [GET] -> https://jsonplaceholder.typicode.com/todos?completed=tru
 ## Check the status code and unmarshall the body
 `OnReplyIf` method allows developers to execute `type ResponseHandler func(r *http.Response) error` operation matched by `StatusMatcher`
 ```go
-OnReplyIf(inpu.StatusIsSuccess, inpu.UnmarshalJson(&filteredTodos)). // it marshals the body to the variable
-OnReplyIf(inpu.StatusAny, inpu.ReturnError(errors.New("could not fetch the todo items"))). // it returns the error if status does not match any condition
+OnReplyIf(inpu.StatusIsSuccess, inpu.ThenUnmarshalJsonTo(&filteredTodos)). // it marshals the body to the variable
+OnReplyIf(inpu.StatusAny, inpu.ThenReturnError(errors.New("could not fetch the todo items"))). // it returns the error if status does not match any condition
 ```
 Available status matchers are:
 ```go

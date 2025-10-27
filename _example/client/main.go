@@ -29,8 +29,8 @@ func main() {
 	err := client.Get("/todos").
 		QueryBool("completed", true).
 		QueryInt("userId", 2).
-		OnReply(inpu.StatusIsOk, inpu.UnmarshalJson(&filteredTodos)).
-		OnReply(inpu.StatusAnyExcept(http.StatusOK), inpu.ReturnDefaultError).
+		OnReplyIf(inpu.StatusIsOk, inpu.ThenUnmarshalJsonTo(&filteredTodos)).
+		OnReplyIf(inpu.StatusAnyExcept(http.StatusOK), inpu.ThenReturnDefaultError).
 		Send()
 
 	for i := range filteredTodos {
@@ -45,7 +45,7 @@ func main() {
 	createdToDo := CreatedTodo{}
 	err = client.
 		Post("/todos", inpu.BodyJson(newTodo)).
-		OnReply(inpu.StatusIsOk, inpu.UnmarshalJson(&createdToDo)).
+		OnReplyIf(inpu.StatusIsOk, inpu.ThenUnmarshalJsonTo(&createdToDo)).
 		Send()
 	if err != nil {
 		log.Fatal(err)

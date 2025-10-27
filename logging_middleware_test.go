@@ -33,7 +33,7 @@ func (c *ClientSuite) Test_LoggingMiddleware_Level_info() {
 	err := client.PostCtx(ctx, "/", BodyJson(testData)).
 		ContentTypeJson().
 		AuthToken("my-token").
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	logs := logger.infoBuffer.String()
@@ -79,7 +79,7 @@ func (c *ClientSuite) Test_LoggingMiddleware() {
 	err := client.PostCtx(ctx, "/", BodyJson(testData)).
 		ContentTypeJson().
 		AuthToken("my-token").
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	logs := logger.infoBuffer.String()
@@ -124,7 +124,7 @@ func (c *ClientSuite) Test_LoggingMiddleware_Disabled() {
 	err := client.PostCtx(ctx, "/", BodyJson(testData)).
 		ContentTypeJson().
 		AuthToken("my-token").
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)

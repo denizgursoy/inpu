@@ -23,7 +23,7 @@ func (c *ClientSuite) Test_Body_BodyFormDataFromUrl() {
 		"foo1":  {"bar1"},
 	}
 	err := Post(server.URL, BodyFormData(data)).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -45,7 +45,7 @@ func (c *ClientSuite) Test_Body_BodyFormDataFromMap() {
 		"foo1":  "bar1",
 	}
 	err := Post(server.URL, BodyFormDataFromMap(data)).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -62,7 +62,7 @@ func (c *ClientSuite) Test_Body_String() {
 	defer server.Close()
 
 	err := Post(server.URL, BodyString("foo")).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -79,7 +79,7 @@ func (c *ClientSuite) Test_Body_Xml_Marshal() {
 	defer server.Close()
 
 	err := Post(server.URL, BodyXml(testData)).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)

@@ -29,7 +29,7 @@ func (c *ClientSuite) Test_RetryMiddleware() {
 	client := New().UseMiddlewares(RetryMiddleware(2))
 
 	err := client.Get(server.URL).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -50,7 +50,7 @@ func (c *ClientSuite) Test_No_Retry_On_CertificateVerificationError_Error() {
 	client := New().UseMiddlewares(RetryMiddleware(2))
 
 	err := client.Get(server.URL).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	var certificateVerificationError *tls.CertificateVerificationError
@@ -78,7 +78,7 @@ func (c *ClientSuite) Test_Retry_On_429() {
 	client := New().UseMiddlewares(RetryMiddleware(2))
 
 	err := client.Get(server.URL).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -102,7 +102,7 @@ func (c *ClientSuite) Test_No_Try_On_The_Non_Retriable_Server_Errors() {
 			client := New().UseMiddlewares(RetryMiddleware(2))
 
 			err := client.Get(server.URL).
-				OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+				OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 				Send()
 
 			c.Require().Error(err)
@@ -117,7 +117,7 @@ func (c *ClientSuite) Test_UnsuccessfulRetryError() {
 	client := New().UseMiddlewares(RetryMiddleware(2))
 
 	err := client.Get("http://127.0.0.1:7777").
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	var urlError *url.Error
@@ -149,7 +149,7 @@ func (c *ClientSuite) Test_Wait_By_Retry_After_Value() {
 
 	err := client.
 		Get(server.URL).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.T().Logf("duration is %s", duration)
@@ -182,7 +182,7 @@ func (c *ClientSuite) Test_Custom_Retry_Function() {
 
 	err := client.
 		Get(server.URL).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)

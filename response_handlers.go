@@ -6,16 +6,16 @@ import (
 	"reflect"
 )
 
-// ResponseHandler is the function you pass along with a status matcher in the OnReply call.
+// ResponseHandler is the function you pass along with a status matcher in the OnReplyIf call.
 // It can be
 type ResponseHandler func(response *http.Response) error
 
-// UnmarshalJson marshals the body to the pointer provided in the targetAsPointer argument.
+// ThenUnmarshalJsonTo marshals the body to the pointer provided in the targetAsPointer argument.
 // It checks if the type is pointer as well.
 // It does not close the body because body is closed after this function is called by the caller
 // Usage:
-// OnReply(StatusAny, UnmarshalJson(&items))
-func UnmarshalJson(targetAsPointer any) ResponseHandler {
+// OnReplyIf(StatusAny, ThenUnmarshalJsonTo(&items))
+func ThenUnmarshalJsonTo(targetAsPointer any) ResponseHandler {
 	return func(r *http.Response) error {
 		if targetAsPointer == nil {
 			return ErrMarshalToNil
@@ -29,27 +29,27 @@ func UnmarshalJson(targetAsPointer any) ResponseHandler {
 	}
 }
 
-// ReturnError returns the provided error directly in case of status is matched
+// ThenReturnError returns the provided error directly in case of status is matched
 // Usage:
-// OnReply(StatusAny, ReturnError(errors.New("something happened")))
-func ReturnError(err error) ResponseHandler {
+// OnReplyIf(StatusAny, ThenReturnError(errors.New("something happened")))
+func ThenReturnError(err error) ResponseHandler {
 	return func(_ *http.Response) error {
 		return err
 	}
 }
 
-// ReturnDefaultError returns an error that contains the request method, requests URL and the status code
+// ThenReturnDefaultError returns an error that contains the request method, requests URL and the status code
 // Usage:
-// OnReply(StatusAny, ReturnDefaultError)
-func ReturnDefaultError(r *http.Response) error {
+// OnReplyIf(StatusAny, ThenReturnDefaultError)
+func ThenReturnDefaultError(r *http.Response) error {
 	return &DefaultError{
 		res: r,
 	}
 }
 
-// DoNothing returns nil error
+// ThenDoNothing returns nil error
 // Usage:
-// OnReply(StatusAny, DoNothing)
-func DoNothing(_ *http.Response) error {
+// OnReplyIf(StatusAny, ThenDoNothing)
+func ThenDoNothing(_ *http.Response) error {
 	return nil
 }

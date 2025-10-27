@@ -9,8 +9,8 @@ To download:`go get github.com/denizgursoy/inpu`
 err :=  inpu.Get("https://jsonplaceholder.typicode.com/todos").
             QueryBool("completed", true).
             QueryInt("userId", 2).
-            OnReply(inpu.StatusIsOk, inpu.UnmarshalJson(&filteredTodos)).
-            OnReply(inpu.StatusAny, inpu.ReturnDefaultError).
+            OnReplyIf(inpu.StatusIsOk, inpu.ThenUnmarshalJsonTo(&filteredTodos)).
+	        OnReplyIf(inpu.StatusAny, inpu.ThenReturnDefaultError).
             Send()
 ```
 Does the following call
@@ -21,10 +21,10 @@ It will marshal the response body to `filteredTodos` if status code `200`. If re
 return `called [GET] -> https://jsonplaceholder.typicode.com/todos?completed=true&userId=2 and got 500` error to provide more information.
 
 ## Check the status code and unmarshall the body
-`OnReply` method allows developers to execute `type ResponseHandler func(r *http.Response) error` operation matched by `StatusMatcher`
+`OnReplyIf` method allows developers to execute `type ResponseHandler func(r *http.Response) error` operation matched by `StatusMatcher`
 ```go
-OnReply(inpu.StatusIsSuccess, inpu.UnmarshalJson(&filteredTodos)). // it marshals the body to the variable
-OnReply(inpu.StatusAny, inpu.ReturnError(errors.New("could not fetch the todo items"))). // it returns the error if status does not match any condition
+OnReplyIf(inpu.StatusIsSuccess, inpu.UnmarshalJson(&filteredTodos)). // it marshals the body to the variable
+OnReplyIf(inpu.StatusAny, inpu.ReturnError(errors.New("could not fetch the todo items"))). // it returns the error if status does not match any condition
 ```
 Available status matchers are:
 ```go
@@ -108,16 +108,17 @@ StatusIsNetworkAuthenticationRequired     // it matches status 511
 ```
 Available response handlers are:
 ```go
-UnmarshalJson(t any) // it marshals the response body into the 
-ReturnError(err error) // it returns the error provided
-ReturnDefaultError() // it returns default error that prints status code, url and method
+ThenUnmarshalJsonTo(t any) // it marshals the response body into the 
+ThenReturnError(err error) // it returns the error provided
+ThenReturnDefaultError() // it returns default error that prints status code, url and method
+ThenDoNothing() // just a place holder
 ```
 You can also add custom handler:
 ```go
 err := inpu.Get("https://jsonplaceholder.typicode.com/todos").
     QueryBool("completed", true).
     QueryInt("userId", 2).
-    OnReply(inpu.StatusAny, func(r *http.Response) error {
+    OnReplyIf(inpu.StatusAny, func(r *http.Response) error {
         // custom processing
         return nil
     }).

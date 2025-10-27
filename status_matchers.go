@@ -40,10 +40,10 @@ func (s *statusChecker) Priority() int {
 	return s.priority
 }
 
-// StatusAny matches any status code. It can be used as fallback in case previous OnReply matches is not called
+// StatusAny matches any status code. It can be used as fallback in case previous OnReplyIf matches is not called
 // It has the least priority 10, and it is checked after StatusAnyExceptOneOf
 // Usage:
-// OnReply(StatusAny,func(r *http.Response) error{})
+// OnReplyIf(StatusAny,func(r *http.Response) error{})
 var StatusAny = newStatusChecker(func(_ int) bool {
 	return true
 }, 10)
@@ -51,7 +51,7 @@ var StatusAny = newStatusChecker(func(_ int) bool {
 // StatusAnyExceptOneOf matches any status code except those provided.
 // It has the priority 9, and it is checked after StatusAnyExcept.
 // Usage:
-// OnReply(StatusAnyExceptOneOf(http.StatusOK,http.StatusCreated),func(r *http.Response) error{})
+// OnReplyIf(StatusAnyExceptOneOf(http.StatusOK,http.StatusCreated),func(r *http.Response) error{})
 func StatusAnyExceptOneOf(statusCodes ...int) StatusMatcher {
 	return newStatusChecker(func(statusCode int) bool {
 		return !slices.Contains(statusCodes, statusCode)
@@ -61,7 +61,7 @@ func StatusAnyExceptOneOf(statusCodes ...int) StatusMatcher {
 // StatusAnyExcept matches any status code except the one provided.
 // It has the priority 8, and it is checked after StatusIsInformational, StatusIsSuccess, StatusIsRedirection, StatusIsClientError, StatusIsServerError.
 // Usage:
-// OnReply(StatusAnyExcept(http.StatusOK),func(r *http.Response) error{})
+// OnReplyIf(StatusAnyExcept(http.StatusOK),func(r *http.Response) error{})
 func StatusAnyExcept(statusCode int) StatusMatcher {
 	return newStatusChecker(func(actualStatus int) bool {
 		return statusCode != actualStatus
@@ -71,7 +71,7 @@ func StatusAnyExcept(statusCode int) StatusMatcher {
 // StatusIsSuccess checks if the response status code is between [200,300).
 // It has the priority 3, and it is checked after StatusIsOneOf.
 // Usage:
-// OnReply(StatusIsSuccess,func(r *http.Response) error{})
+// OnReplyIf(StatusIsSuccess,func(r *http.Response) error{})
 var StatusIsSuccess = newStatusChecker(func(statusCode int) bool {
 	return statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices
 }, 3)
@@ -79,7 +79,7 @@ var StatusIsSuccess = newStatusChecker(func(statusCode int) bool {
 // StatusIsInformational checks if the response status code is less than 200.
 // It has the priority 3, and it is checked after StatusIsOneOf.
 // Usage:
-// OnReply(StatusIsInformational,func(r *http.Response) error{})
+// OnReplyIf(StatusIsInformational,func(r *http.Response) error{})
 var StatusIsInformational = newStatusChecker(func(statusCode int) bool {
 	return statusCode < http.StatusOK
 }, 3)
@@ -87,7 +87,7 @@ var StatusIsInformational = newStatusChecker(func(statusCode int) bool {
 // StatusIsRedirection checks if the response status code is between [300,400).
 // It has the priority 3, and it is checked after StatusIsOneOf.
 // Usage:
-// OnReply(StatusIsRedirection,func(r *http.Response) error{})
+// OnReplyIf(StatusIsRedirection,func(r *http.Response) error{})
 var StatusIsRedirection = newStatusChecker(func(statusCode int) bool {
 	return statusCode >= http.StatusMultipleChoices && statusCode < http.StatusBadRequest
 }, 3)
@@ -95,7 +95,7 @@ var StatusIsRedirection = newStatusChecker(func(statusCode int) bool {
 // StatusIsClientError checks if the response status code is between [400,500).
 // It has the priority 3, and it is checked after StatusIsOneOf.
 // Usage:
-// OnReply(StatusIsClientError,func(r *http.Response) error{})
+// OnReplyIf(StatusIsClientError,func(r *http.Response) error{})
 var StatusIsClientError = newStatusChecker(func(statusCode int) bool {
 	return statusCode >= http.StatusBadRequest && statusCode < http.StatusInternalServerError
 }, 3)
@@ -103,7 +103,7 @@ var StatusIsClientError = newStatusChecker(func(statusCode int) bool {
 // StatusIsServerError checks if the response status is greater or equal than 500.
 // It has the priority 3, and it is checked after StatusIsOneOf.
 // Usage:
-// OnReply(StatusIsServerError,func(r *http.Response) error{})
+// OnReplyIf(StatusIsServerError,func(r *http.Response) error{})
 var StatusIsServerError = newStatusChecker(func(statusCode int) bool {
 	return statusCode >= 500
 }, 3)
@@ -111,7 +111,7 @@ var StatusIsServerError = newStatusChecker(func(statusCode int) bool {
 // StatusIsOneOf checks if the response status is one of the provided codes.
 // It has the priority 2, and it is checked after StatusIs.
 // Usage:
-// OnReply(StatusIsOneOf(http.StatusOK,http.StatusCreated),func(r *http.Response) error{}) -> only matches when the status code is either 200,201
+// OnReplyIf(StatusIsOneOf(http.StatusOK,http.StatusCreated),func(r *http.Response) error{}) -> only matches when the status code is either 200,201
 func StatusIsOneOf(statusCodes ...int) StatusMatcher {
 	return newStatusChecker(func(statusCode int) bool {
 		return slices.Contains(statusCodes, statusCode)
@@ -121,7 +121,7 @@ func StatusIsOneOf(statusCodes ...int) StatusMatcher {
 // StatusIs checks if the response status is the provided status code.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIs(http.StatusOK),func(r *http.Response) error{}) -> only matches when the status code is 200
+// OnReplyIf(StatusIs(http.StatusOK),func(r *http.Response) error{}) -> only matches when the status code is 200
 func StatusIs(expectedStatus int) StatusMatcher {
 	return newStatusChecker(func(actualStatus int) bool {
 		return expectedStatus == actualStatus
@@ -133,7 +133,7 @@ func StatusIs(expectedStatus int) StatusMatcher {
 // StatusIsContinue checks if the response status is 100 Continue.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsContinue, func(r *http.Response) error{}) -> only matches when the status code is 100
+// OnReplyIf(StatusIsContinue, func(r *http.Response) error{}) -> only matches when the status code is 100
 var StatusIsContinue = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusContinue
 }, 1)
@@ -141,7 +141,7 @@ var StatusIsContinue = newStatusChecker(func(statusCode int) bool {
 // StatusIsSwitchingProtocols checks if the response status is 101 Switching Protocols.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsSwitchingProtocols, func(r *http.Response) error{}) -> only matches when the status code is 101
+// OnReplyIf(StatusIsSwitchingProtocols, func(r *http.Response) error{}) -> only matches when the status code is 101
 var StatusIsSwitchingProtocols = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusSwitchingProtocols
 }, 1)
@@ -149,7 +149,7 @@ var StatusIsSwitchingProtocols = newStatusChecker(func(statusCode int) bool {
 // StatusIsProcessing checks if the response status is 102 Processing.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsProcessing, func(r *http.Response) error{}) -> only matches when the status code is 102
+// OnReplyIf(StatusIsProcessing, func(r *http.Response) error{}) -> only matches when the status code is 102
 var StatusIsProcessing = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusProcessing
 }, 1)
@@ -157,7 +157,7 @@ var StatusIsProcessing = newStatusChecker(func(statusCode int) bool {
 // StatusIsEarlyHints checks if the response status is 103 Early Hints.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsEarlyHints, func(r *http.Response) error{}) -> only matches when the status code is 103
+// OnReplyIf(StatusIsEarlyHints, func(r *http.Response) error{}) -> only matches when the status code is 103
 var StatusIsEarlyHints = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusEarlyHints
 }, 1)
@@ -167,7 +167,7 @@ var StatusIsEarlyHints = newStatusChecker(func(statusCode int) bool {
 // StatusIsOk checks if the response status is 200 OK.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsOk, func(r *http.Response) error{}) -> only matches when the status code is 200
+// OnReplyIf(StatusIsOk, func(r *http.Response) error{}) -> only matches when the status code is 200
 var StatusIsOk = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusOK
 }, 1)
@@ -175,7 +175,7 @@ var StatusIsOk = newStatusChecker(func(statusCode int) bool {
 // StatusIsCreated checks if the response status is 201 Created.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsCreated, func(r *http.Response) error{}) -> only matches when the status code is 201
+// OnReplyIf(StatusIsCreated, func(r *http.Response) error{}) -> only matches when the status code is 201
 var StatusIsCreated = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusCreated
 }, 1)
@@ -183,7 +183,7 @@ var StatusIsCreated = newStatusChecker(func(statusCode int) bool {
 // StatusIsAccepted checks if the response status is 202 Accepted.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsAccepted, func(r *http.Response) error{}) -> only matches when the status code is 202
+// OnReplyIf(StatusIsAccepted, func(r *http.Response) error{}) -> only matches when the status code is 202
 var StatusIsAccepted = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusAccepted
 }, 1)
@@ -191,7 +191,7 @@ var StatusIsAccepted = newStatusChecker(func(statusCode int) bool {
 // StatusIsNonAuthoritativeInfo checks if the response status is 203 Non-Authoritative Information.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsNonAuthoritativeInfo, func(r *http.Response) error{}) -> only matches when the status code is 203
+// OnReplyIf(StatusIsNonAuthoritativeInfo, func(r *http.Response) error{}) -> only matches when the status code is 203
 var StatusIsNonAuthoritativeInfo = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusNonAuthoritativeInfo
 }, 1)
@@ -199,7 +199,7 @@ var StatusIsNonAuthoritativeInfo = newStatusChecker(func(statusCode int) bool {
 // StatusIsNoContent checks if the response status is 204 No Content.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsNoContent, func(r *http.Response) error{}) -> only matches when the status code is 204
+// OnReplyIf(StatusIsNoContent, func(r *http.Response) error{}) -> only matches when the status code is 204
 var StatusIsNoContent = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusNoContent
 }, 1)
@@ -207,7 +207,7 @@ var StatusIsNoContent = newStatusChecker(func(statusCode int) bool {
 // StatusIsResetContent checks if the response status is 205 Reset Content.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsResetContent, func(r *http.Response) error{}) -> only matches when the status code is 205
+// OnReplyIf(StatusIsResetContent, func(r *http.Response) error{}) -> only matches when the status code is 205
 var StatusIsResetContent = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusResetContent
 }, 1)
@@ -215,7 +215,7 @@ var StatusIsResetContent = newStatusChecker(func(statusCode int) bool {
 // StatusIsPartialContent checks if the response status is 206 Partial Content.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsPartialContent, func(r *http.Response) error{}) -> only matches when the status code is 206
+// OnReplyIf(StatusIsPartialContent, func(r *http.Response) error{}) -> only matches when the status code is 206
 var StatusIsPartialContent = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusPartialContent
 }, 1)
@@ -223,7 +223,7 @@ var StatusIsPartialContent = newStatusChecker(func(statusCode int) bool {
 // StatusIsMultiStatus checks if the response status is 207 Multi-Status.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsMultiStatus, func(r *http.Response) error{}) -> only matches when the status code is 207
+// OnReplyIf(StatusIsMultiStatus, func(r *http.Response) error{}) -> only matches when the status code is 207
 var StatusIsMultiStatus = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusMultiStatus
 }, 1)
@@ -231,7 +231,7 @@ var StatusIsMultiStatus = newStatusChecker(func(statusCode int) bool {
 // StatusIsAlreadyReported checks if the response status is 208 Already Reported.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsAlreadyReported, func(r *http.Response) error{}) -> only matches when the status code is 208
+// OnReplyIf(StatusIsAlreadyReported, func(r *http.Response) error{}) -> only matches when the status code is 208
 var StatusIsAlreadyReported = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusAlreadyReported
 }, 1)
@@ -239,7 +239,7 @@ var StatusIsAlreadyReported = newStatusChecker(func(statusCode int) bool {
 // StatusIsIMUsed checks if the response status is 226 IM Used.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsIMUsed, func(r *http.Response) error{}) -> only matches when the status code is 226
+// OnReplyIf(StatusIsIMUsed, func(r *http.Response) error{}) -> only matches when the status code is 226
 var StatusIsIMUsed = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusIMUsed
 }, 1)
@@ -249,7 +249,7 @@ var StatusIsIMUsed = newStatusChecker(func(statusCode int) bool {
 // StatusIsMultipleChoices checks if the response status is 300 Multiple Choices.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsMultipleChoices, func(r *http.Response) error{}) -> only matches when the status code is 300
+// OnReplyIf(StatusIsMultipleChoices, func(r *http.Response) error{}) -> only matches when the status code is 300
 var StatusIsMultipleChoices = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusMultipleChoices
 }, 1)
@@ -257,7 +257,7 @@ var StatusIsMultipleChoices = newStatusChecker(func(statusCode int) bool {
 // StatusIsMovedPermanently checks if the response status is 301 Moved Permanently.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsMovedPermanently, func(r *http.Response) error{}) -> only matches when the status code is 301
+// OnReplyIf(StatusIsMovedPermanently, func(r *http.Response) error{}) -> only matches when the status code is 301
 var StatusIsMovedPermanently = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusMovedPermanently
 }, 1)
@@ -265,7 +265,7 @@ var StatusIsMovedPermanently = newStatusChecker(func(statusCode int) bool {
 // StatusIsFound checks if the response status is 302 Found.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsFound, func(r *http.Response) error{}) -> only matches when the status code is 302
+// OnReplyIf(StatusIsFound, func(r *http.Response) error{}) -> only matches when the status code is 302
 var StatusIsFound = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusFound
 }, 1)
@@ -273,7 +273,7 @@ var StatusIsFound = newStatusChecker(func(statusCode int) bool {
 // StatusIsSeeOther checks if the response status is 303 See Other.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsSeeOther, func(r *http.Response) error{}) -> only matches when the status code is 303
+// OnReplyIf(StatusIsSeeOther, func(r *http.Response) error{}) -> only matches when the status code is 303
 var StatusIsSeeOther = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusSeeOther
 }, 1)
@@ -281,7 +281,7 @@ var StatusIsSeeOther = newStatusChecker(func(statusCode int) bool {
 // StatusIsNotModified checks if the response status is 304 Not Modified.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsNotModified, func(r *http.Response) error{}) -> only matches when the status code is 304
+// OnReplyIf(StatusIsNotModified, func(r *http.Response) error{}) -> only matches when the status code is 304
 var StatusIsNotModified = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusNotModified
 }, 1)
@@ -289,7 +289,7 @@ var StatusIsNotModified = newStatusChecker(func(statusCode int) bool {
 // StatusIsUseProxy checks if the response status is 305 Use Proxy.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsUseProxy, func(r *http.Response) error{}) -> only matches when the status code is 305
+// OnReplyIf(StatusIsUseProxy, func(r *http.Response) error{}) -> only matches when the status code is 305
 var StatusIsUseProxy = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusUseProxy
 }, 1)
@@ -297,7 +297,7 @@ var StatusIsUseProxy = newStatusChecker(func(statusCode int) bool {
 // StatusIsTemporaryRedirect checks if the response status is 307 Temporary Redirect.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsTemporaryRedirect, func(r *http.Response) error{}) -> only matches when the status code is 307
+// OnReplyIf(StatusIsTemporaryRedirect, func(r *http.Response) error{}) -> only matches when the status code is 307
 var StatusIsTemporaryRedirect = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusTemporaryRedirect
 }, 1)
@@ -305,7 +305,7 @@ var StatusIsTemporaryRedirect = newStatusChecker(func(statusCode int) bool {
 // StatusIsPermanentRedirect checks if the response status is 308 Permanent Redirect.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsPermanentRedirect, func(r *http.Response) error{}) -> only matches when the status code is 308
+// OnReplyIf(StatusIsPermanentRedirect, func(r *http.Response) error{}) -> only matches when the status code is 308
 var StatusIsPermanentRedirect = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusPermanentRedirect
 }, 1)
@@ -315,7 +315,7 @@ var StatusIsPermanentRedirect = newStatusChecker(func(statusCode int) bool {
 // StatusIsBadRequest checks if the response status is 400 Bad Request.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsBadRequest, func(r *http.Response) error{}) -> only matches when the status code is 400
+// OnReplyIf(StatusIsBadRequest, func(r *http.Response) error{}) -> only matches when the status code is 400
 var StatusIsBadRequest = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusBadRequest
 }, 1)
@@ -323,7 +323,7 @@ var StatusIsBadRequest = newStatusChecker(func(statusCode int) bool {
 // StatusIsUnauthorized checks if the response status is 401 Unauthorized.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsUnauthorized, func(r *http.Response) error{}) -> only matches when the status code is 401
+// OnReplyIf(StatusIsUnauthorized, func(r *http.Response) error{}) -> only matches when the status code is 401
 var StatusIsUnauthorized = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusUnauthorized
 }, 1)
@@ -331,7 +331,7 @@ var StatusIsUnauthorized = newStatusChecker(func(statusCode int) bool {
 // StatusIsPaymentRequired checks if the response status is 402 Payment Required.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsPaymentRequired, func(r *http.Response) error{}) -> only matches when the status code is 402
+// OnReplyIf(StatusIsPaymentRequired, func(r *http.Response) error{}) -> only matches when the status code is 402
 var StatusIsPaymentRequired = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusPaymentRequired
 }, 1)
@@ -339,7 +339,7 @@ var StatusIsPaymentRequired = newStatusChecker(func(statusCode int) bool {
 // StatusIsForbidden checks if the response status is 403 Forbidden.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsForbidden, func(r *http.Response) error{}) -> only matches when the status code is 403
+// OnReplyIf(StatusIsForbidden, func(r *http.Response) error{}) -> only matches when the status code is 403
 var StatusIsForbidden = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusForbidden
 }, 1)
@@ -347,7 +347,7 @@ var StatusIsForbidden = newStatusChecker(func(statusCode int) bool {
 // StatusIsNotFound checks if the response status is 404 Not Found.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsNotFound, func(r *http.Response) error{}) -> only matches when the status code is 404
+// OnReplyIf(StatusIsNotFound, func(r *http.Response) error{}) -> only matches when the status code is 404
 var StatusIsNotFound = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusNotFound
 }, 1)
@@ -355,7 +355,7 @@ var StatusIsNotFound = newStatusChecker(func(statusCode int) bool {
 // StatusIsMethodNotAllowed checks if the response status is 405 Method Not Allowed.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsMethodNotAllowed, func(r *http.Response) error{}) -> only matches when the status code is 405
+// OnReplyIf(StatusIsMethodNotAllowed, func(r *http.Response) error{}) -> only matches when the status code is 405
 var StatusIsMethodNotAllowed = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusMethodNotAllowed
 }, 1)
@@ -363,7 +363,7 @@ var StatusIsMethodNotAllowed = newStatusChecker(func(statusCode int) bool {
 // StatusIsNotAcceptable checks if the response status is 406 Not Acceptable.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsNotAcceptable, func(r *http.Response) error{}) -> only matches when the status code is 406
+// OnReplyIf(StatusIsNotAcceptable, func(r *http.Response) error{}) -> only matches when the status code is 406
 var StatusIsNotAcceptable = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusNotAcceptable
 }, 1)
@@ -371,7 +371,7 @@ var StatusIsNotAcceptable = newStatusChecker(func(statusCode int) bool {
 // StatusIsProxyAuthRequired checks if the response status is 407 Proxy Authentication Required.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsProxyAuthRequired, func(r *http.Response) error{}) -> only matches when the status code is 407
+// OnReplyIf(StatusIsProxyAuthRequired, func(r *http.Response) error{}) -> only matches when the status code is 407
 var StatusIsProxyAuthRequired = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusProxyAuthRequired
 }, 1)
@@ -379,7 +379,7 @@ var StatusIsProxyAuthRequired = newStatusChecker(func(statusCode int) bool {
 // StatusIsRequestTimeout checks if the response status is 408 Request Timeout.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsRequestTimeout, func(r *http.Response) error{}) -> only matches when the status code is 408
+// OnReplyIf(StatusIsRequestTimeout, func(r *http.Response) error{}) -> only matches when the status code is 408
 var StatusIsRequestTimeout = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusRequestTimeout
 }, 1)
@@ -387,7 +387,7 @@ var StatusIsRequestTimeout = newStatusChecker(func(statusCode int) bool {
 // StatusIsConflict checks if the response status is 409 Conflict.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsConflict, func(r *http.Response) error{}) -> only matches when the status code is 409
+// OnReplyIf(StatusIsConflict, func(r *http.Response) error{}) -> only matches when the status code is 409
 var StatusIsConflict = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusConflict
 }, 1)
@@ -395,7 +395,7 @@ var StatusIsConflict = newStatusChecker(func(statusCode int) bool {
 // StatusIsGone checks if the response status is 410 Gone.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsGone, func(r *http.Response) error{}) -> only matches when the status code is 410
+// OnReplyIf(StatusIsGone, func(r *http.Response) error{}) -> only matches when the status code is 410
 var StatusIsGone = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusGone
 }, 1)
@@ -403,7 +403,7 @@ var StatusIsGone = newStatusChecker(func(statusCode int) bool {
 // StatusIsLengthRequired checks if the response status is 411 Length Required.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsLengthRequired, func(r *http.Response) error{}) -> only matches when the status code is 411
+// OnReplyIf(StatusIsLengthRequired, func(r *http.Response) error{}) -> only matches when the status code is 411
 var StatusIsLengthRequired = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusLengthRequired
 }, 1)
@@ -411,7 +411,7 @@ var StatusIsLengthRequired = newStatusChecker(func(statusCode int) bool {
 // StatusIsPreconditionFailed checks if the response status is 412 Precondition Failed.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsPreconditionFailed, func(r *http.Response) error{}) -> only matches when the status code is 412
+// OnReplyIf(StatusIsPreconditionFailed, func(r *http.Response) error{}) -> only matches when the status code is 412
 var StatusIsPreconditionFailed = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusPreconditionFailed
 }, 1)
@@ -419,7 +419,7 @@ var StatusIsPreconditionFailed = newStatusChecker(func(statusCode int) bool {
 // StatusIsRequestEntityTooLarge checks if the response status is 413 Request Entity Too Large.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsRequestEntityTooLarge, func(r *http.Response) error{}) -> only matches when the status code is 413
+// OnReplyIf(StatusIsRequestEntityTooLarge, func(r *http.Response) error{}) -> only matches when the status code is 413
 var StatusIsRequestEntityTooLarge = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusRequestEntityTooLarge
 }, 1)
@@ -427,7 +427,7 @@ var StatusIsRequestEntityTooLarge = newStatusChecker(func(statusCode int) bool {
 // StatusIsRequestURITooLong checks if the response status is 414 Request URI Too Long.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsRequestURITooLong, func(r *http.Response) error{}) -> only matches when the status code is 414
+// OnReplyIf(StatusIsRequestURITooLong, func(r *http.Response) error{}) -> only matches when the status code is 414
 var StatusIsRequestURITooLong = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusRequestURITooLong
 }, 1)
@@ -435,7 +435,7 @@ var StatusIsRequestURITooLong = newStatusChecker(func(statusCode int) bool {
 // StatusIsUnsupportedMediaType checks if the response status is 415 Unsupported Media Type.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsUnsupportedMediaType, func(r *http.Response) error{}) -> only matches when the status code is 415
+// OnReplyIf(StatusIsUnsupportedMediaType, func(r *http.Response) error{}) -> only matches when the status code is 415
 var StatusIsUnsupportedMediaType = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusUnsupportedMediaType
 }, 1)
@@ -443,7 +443,7 @@ var StatusIsUnsupportedMediaType = newStatusChecker(func(statusCode int) bool {
 // StatusIsRequestedRangeNotSatisfiable checks if the response status is 416 Requested Range Not Satisfiable.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsRequestedRangeNotSatisfiable, func(r *http.Response) error{}) -> only matches when the status code is 416
+// OnReplyIf(StatusIsRequestedRangeNotSatisfiable, func(r *http.Response) error{}) -> only matches when the status code is 416
 var StatusIsRequestedRangeNotSatisfiable = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusRequestedRangeNotSatisfiable
 }, 1)
@@ -451,7 +451,7 @@ var StatusIsRequestedRangeNotSatisfiable = newStatusChecker(func(statusCode int)
 // StatusIsExpectationFailed checks if the response status is 417 Expectation Failed.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsExpectationFailed, func(r *http.Response) error{}) -> only matches when the status code is 417
+// OnReplyIf(StatusIsExpectationFailed, func(r *http.Response) error{}) -> only matches when the status code is 417
 var StatusIsExpectationFailed = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusExpectationFailed
 }, 1)
@@ -459,7 +459,7 @@ var StatusIsExpectationFailed = newStatusChecker(func(statusCode int) bool {
 // StatusIsTeapot checks if the response status is 418 I'm a teapot.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsTeapot, func(r *http.Response) error{}) -> only matches when the status code is 418
+// OnReplyIf(StatusIsTeapot, func(r *http.Response) error{}) -> only matches when the status code is 418
 var StatusIsTeapot = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusTeapot
 }, 1)
@@ -467,7 +467,7 @@ var StatusIsTeapot = newStatusChecker(func(statusCode int) bool {
 // StatusIsMisdirectedRequest checks if the response status is 421 Misdirected Request.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsMisdirectedRequest, func(r *http.Response) error{}) -> only matches when the status code is 421
+// OnReplyIf(StatusIsMisdirectedRequest, func(r *http.Response) error{}) -> only matches when the status code is 421
 var StatusIsMisdirectedRequest = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusMisdirectedRequest
 }, 1)
@@ -475,7 +475,7 @@ var StatusIsMisdirectedRequest = newStatusChecker(func(statusCode int) bool {
 // StatusIsUnprocessableEntity checks if the response status is 422 Unprocessable Entity.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsUnprocessableEntity, func(r *http.Response) error{}) -> only matches when the status code is 422
+// OnReplyIf(StatusIsUnprocessableEntity, func(r *http.Response) error{}) -> only matches when the status code is 422
 var StatusIsUnprocessableEntity = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusUnprocessableEntity
 }, 1)
@@ -483,7 +483,7 @@ var StatusIsUnprocessableEntity = newStatusChecker(func(statusCode int) bool {
 // StatusIsLocked checks if the response status is 423 Locked.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsLocked, func(r *http.Response) error{}) -> only matches when the status code is 423
+// OnReplyIf(StatusIsLocked, func(r *http.Response) error{}) -> only matches when the status code is 423
 var StatusIsLocked = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusLocked
 }, 1)
@@ -491,7 +491,7 @@ var StatusIsLocked = newStatusChecker(func(statusCode int) bool {
 // StatusIsFailedDependency checks if the response status is 424 Failed Dependency.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsFailedDependency, func(r *http.Response) error{}) -> only matches when the status code is 424
+// OnReplyIf(StatusIsFailedDependency, func(r *http.Response) error{}) -> only matches when the status code is 424
 var StatusIsFailedDependency = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusFailedDependency
 }, 1)
@@ -499,7 +499,7 @@ var StatusIsFailedDependency = newStatusChecker(func(statusCode int) bool {
 // StatusIsTooEarly checks if the response status is 425 Too Early.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsTooEarly, func(r *http.Response) error{}) -> only matches when the status code is 425
+// OnReplyIf(StatusIsTooEarly, func(r *http.Response) error{}) -> only matches when the status code is 425
 var StatusIsTooEarly = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusTooEarly
 }, 1)
@@ -507,7 +507,7 @@ var StatusIsTooEarly = newStatusChecker(func(statusCode int) bool {
 // StatusIsUpgradeRequired checks if the response status is 426 Upgrade Required.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsUpgradeRequired, func(r *http.Response) error{}) -> only matches when the status code is 426
+// OnReplyIf(StatusIsUpgradeRequired, func(r *http.Response) error{}) -> only matches when the status code is 426
 var StatusIsUpgradeRequired = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusUpgradeRequired
 }, 1)
@@ -515,7 +515,7 @@ var StatusIsUpgradeRequired = newStatusChecker(func(statusCode int) bool {
 // StatusIsPreconditionRequired checks if the response status is 428 Precondition Required.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsPreconditionRequired, func(r *http.Response) error{}) -> only matches when the status code is 428
+// OnReplyIf(StatusIsPreconditionRequired, func(r *http.Response) error{}) -> only matches when the status code is 428
 var StatusIsPreconditionRequired = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusPreconditionRequired
 }, 1)
@@ -523,7 +523,7 @@ var StatusIsPreconditionRequired = newStatusChecker(func(statusCode int) bool {
 // StatusIsTooManyRequests checks if the response status is 429 Too Many Requests.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsTooManyRequests, func(r *http.Response) error{}) -> only matches when the status code is 429
+// OnReplyIf(StatusIsTooManyRequests, func(r *http.Response) error{}) -> only matches when the status code is 429
 var StatusIsTooManyRequests = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusTooManyRequests
 }, 1)
@@ -531,7 +531,7 @@ var StatusIsTooManyRequests = newStatusChecker(func(statusCode int) bool {
 // StatusIsRequestHeaderFieldsTooLarge checks if the response status is 431 Request Header Fields Too Large.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsRequestHeaderFieldsTooLarge, func(r *http.Response) error{}) -> only matches when the status code is 431
+// OnReplyIf(StatusIsRequestHeaderFieldsTooLarge, func(r *http.Response) error{}) -> only matches when the status code is 431
 var StatusIsRequestHeaderFieldsTooLarge = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusRequestHeaderFieldsTooLarge
 }, 1)
@@ -539,7 +539,7 @@ var StatusIsRequestHeaderFieldsTooLarge = newStatusChecker(func(statusCode int) 
 // StatusIsUnavailableForLegalReasons checks if the response status is 451 Unavailable For Legal Reasons.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsUnavailableForLegalReasons, func(r *http.Response) error{}) -> only matches when the status code is 451
+// OnReplyIf(StatusIsUnavailableForLegalReasons, func(r *http.Response) error{}) -> only matches when the status code is 451
 var StatusIsUnavailableForLegalReasons = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusUnavailableForLegalReasons
 }, 1)
@@ -549,7 +549,7 @@ var StatusIsUnavailableForLegalReasons = newStatusChecker(func(statusCode int) b
 // StatusIsInternalServerError checks if the response status is 500 Internal Server Error.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsInternalServerError, func(r *http.Response) error{}) -> only matches when the status code is 500
+// OnReplyIf(StatusIsInternalServerError, func(r *http.Response) error{}) -> only matches when the status code is 500
 var StatusIsInternalServerError = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusInternalServerError
 }, 1)
@@ -557,7 +557,7 @@ var StatusIsInternalServerError = newStatusChecker(func(statusCode int) bool {
 // StatusIsNotImplemented checks if the response status is 501 Not Implemented.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsNotImplemented, func(r *http.Response) error{}) -> only matches when the status code is 501
+// OnReplyIf(StatusIsNotImplemented, func(r *http.Response) error{}) -> only matches when the status code is 501
 var StatusIsNotImplemented = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusNotImplemented
 }, 1)
@@ -565,7 +565,7 @@ var StatusIsNotImplemented = newStatusChecker(func(statusCode int) bool {
 // StatusIsBadGateway checks if the response status is 502 Bad Gateway.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsBadGateway, func(r *http.Response) error{}) -> only matches when the status code is 502
+// OnReplyIf(StatusIsBadGateway, func(r *http.Response) error{}) -> only matches when the status code is 502
 var StatusIsBadGateway = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusBadGateway
 }, 1)
@@ -573,7 +573,7 @@ var StatusIsBadGateway = newStatusChecker(func(statusCode int) bool {
 // StatusIsServiceUnavailable checks if the response status is 503 Service Unavailable.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsServiceUnavailable, func(r *http.Response) error{}) -> only matches when the status code is 503
+// OnReplyIf(StatusIsServiceUnavailable, func(r *http.Response) error{}) -> only matches when the status code is 503
 var StatusIsServiceUnavailable = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusServiceUnavailable
 }, 1)
@@ -581,7 +581,7 @@ var StatusIsServiceUnavailable = newStatusChecker(func(statusCode int) bool {
 // StatusIsGatewayTimeout checks if the response status is 504 Gateway Timeout.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsGatewayTimeout, func(r *http.Response) error{}) -> only matches when the status code is 504
+// OnReplyIf(StatusIsGatewayTimeout, func(r *http.Response) error{}) -> only matches when the status code is 504
 var StatusIsGatewayTimeout = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusGatewayTimeout
 }, 1)
@@ -589,7 +589,7 @@ var StatusIsGatewayTimeout = newStatusChecker(func(statusCode int) bool {
 // StatusIsHTTPVersionNotSupported checks if the response status is 505 HTTP Version Not Supported.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsHTTPVersionNotSupported, func(r *http.Response) error{}) -> only matches when the status code is 505
+// OnReplyIf(StatusIsHTTPVersionNotSupported, func(r *http.Response) error{}) -> only matches when the status code is 505
 var StatusIsHTTPVersionNotSupported = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusHTTPVersionNotSupported
 }, 1)
@@ -597,7 +597,7 @@ var StatusIsHTTPVersionNotSupported = newStatusChecker(func(statusCode int) bool
 // StatusIsVariantAlsoNegotiates checks if the response status is 506 Variant Also Negotiates.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsVariantAlsoNegotiates, func(r *http.Response) error{}) -> only matches when the status code is 506
+// OnReplyIf(StatusIsVariantAlsoNegotiates, func(r *http.Response) error{}) -> only matches when the status code is 506
 var StatusIsVariantAlsoNegotiates = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusVariantAlsoNegotiates
 }, 1)
@@ -605,7 +605,7 @@ var StatusIsVariantAlsoNegotiates = newStatusChecker(func(statusCode int) bool {
 // StatusIsInsufficientStorage checks if the response status is 507 Insufficient Storage.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsInsufficientStorage, func(r *http.Response) error{}) -> only matches when the status code is 507
+// OnReplyIf(StatusIsInsufficientStorage, func(r *http.Response) error{}) -> only matches when the status code is 507
 var StatusIsInsufficientStorage = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusInsufficientStorage
 }, 1)
@@ -613,7 +613,7 @@ var StatusIsInsufficientStorage = newStatusChecker(func(statusCode int) bool {
 // StatusIsLoopDetected checks if the response status is 508 Loop Detected.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsLoopDetected, func(r *http.Response) error{}) -> only matches when the status code is 508
+// OnReplyIf(StatusIsLoopDetected, func(r *http.Response) error{}) -> only matches when the status code is 508
 var StatusIsLoopDetected = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusLoopDetected
 }, 1)
@@ -621,7 +621,7 @@ var StatusIsLoopDetected = newStatusChecker(func(statusCode int) bool {
 // StatusIsNotExtended checks if the response status is 510 Not Extended.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsNotExtended, func(r *http.Response) error{}) -> only matches when the status code is 510
+// OnReplyIf(StatusIsNotExtended, func(r *http.Response) error{}) -> only matches when the status code is 510
 var StatusIsNotExtended = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusNotExtended
 }, 1)
@@ -629,7 +629,7 @@ var StatusIsNotExtended = newStatusChecker(func(statusCode int) bool {
 // StatusIsNetworkAuthenticationRequired checks if the response status is 511 Network Authentication Required.
 // It has the priority 1, and it has the top priority.
 // Usage:
-// OnReply(StatusIsNetworkAuthenticationRequired, func(r *http.Response) error{}) -> only matches when the status code is 511
+// OnReplyIf(StatusIsNetworkAuthenticationRequired, func(r *http.Response) error{}) -> only matches when the status code is 511
 var StatusIsNetworkAuthenticationRequired = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusNetworkAuthenticationRequired
 }, 1)

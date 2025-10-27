@@ -38,7 +38,7 @@ func (c *ClientSuite) Test_Headers() {
 		AcceptJson().
 		ContentTypeJson().
 		UserAgent("test-user").
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -54,7 +54,7 @@ func (c *ClientSuite) Test_Basic_Authentication() {
 
 	err := Get(server.URL).
 		AuthBasic(TestUserName, TestUserPassword).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -71,7 +71,7 @@ func (c *ClientSuite) Test_Token_Authentication() {
 
 	err := Get(server.URL).
 		AuthToken(token).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -91,7 +91,7 @@ func (c *ClientSuite) Test_Query_Parameters() {
 		QueryFloat32("float", 1.2).
 		QueryFloat64("float64", 2.2).
 		QueryInt("int", 1).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -108,7 +108,7 @@ func (c *ClientSuite) Test_Multiple_Query_Parameters() {
 	err := Get(server.URL).
 		QueryString("foo", "bar1").
 		QueryString("foo", "bar2").
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -125,7 +125,7 @@ func (c *ClientSuite) Test_Body_Json_Marshal() {
 	defer server.Close()
 
 	err := Post(server.URL, BodyJson(testData)).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -141,7 +141,7 @@ func (c *ClientSuite) Test_Request_Timeout() {
 
 	err := Post(server.URL, BodyJson(testData)).
 		TimeOutIn(100*time.Millisecond).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().ErrorIs(err, context.DeadlineExceeded)
@@ -158,7 +158,7 @@ func (c *ClientSuite) Test_Body_Reader() {
 	defer server.Close()
 
 	err := Post(server.URL, BodyReader(bytes.NewReader([]byte(testDataAsJson)))).
-		OnReply(StatusAnyExcept(http.StatusOK), ReturnError(errors.New("unexpected status"))).
+		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -177,8 +177,8 @@ func (c *ClientSuite) Test_Multiple_Chose_Correct_Reply_Behaviour() {
 		err := Get(server.URL).
 			QueryString("foo", "bar1").
 			QueryString("foo", "bar2").
-			OnReply(StatusIsSuccess, ReturnError(errors.New("unexpected status"))).
-			OnReply(StatusIs(http.StatusOK), ReturnError(expectedError)).
+			OnReplyIf(StatusIsSuccess, ThenReturnError(errors.New("unexpected status"))).
+			OnReplyIf(StatusIs(http.StatusOK), ThenReturnError(expectedError)).
 			Send()
 
 		c.Require().ErrorIs(err, expectedError)
@@ -187,8 +187,8 @@ func (c *ClientSuite) Test_Multiple_Chose_Correct_Reply_Behaviour() {
 		err := Get(server.URL).
 			QueryString("foo", "bar1").
 			QueryString("foo", "bar2").
-			OnReply(StatusIsOneOf(http.StatusOK, http.StatusAccepted), ReturnError(errors.New("unexpected status"))).
-			OnReply(StatusIs(http.StatusOK), ReturnError(expectedError)).
+			OnReplyIf(StatusIsOneOf(http.StatusOK, http.StatusAccepted), ThenReturnError(errors.New("unexpected status"))).
+			OnReplyIf(StatusIs(http.StatusOK), ThenReturnError(expectedError)).
 			Send()
 
 		c.Require().ErrorIs(err, expectedError)
@@ -197,8 +197,8 @@ func (c *ClientSuite) Test_Multiple_Chose_Correct_Reply_Behaviour() {
 		err := Get(server.URL).
 			QueryString("foo", "bar1").
 			QueryString("foo", "bar2").
-			OnReply(StatusIsSuccess, ReturnError(errors.New("unexpected status"))).
-			OnReply(StatusIsOneOf(http.StatusOK, http.StatusAccepted), ReturnError(expectedError)).
+			OnReplyIf(StatusIsSuccess, ThenReturnError(errors.New("unexpected status"))).
+			OnReplyIf(StatusIsOneOf(http.StatusOK, http.StatusAccepted), ThenReturnError(expectedError)).
 			Send()
 
 		c.Require().ErrorIs(err, expectedError)
@@ -207,8 +207,8 @@ func (c *ClientSuite) Test_Multiple_Chose_Correct_Reply_Behaviour() {
 		err := Get(server.URL).
 			QueryString("foo", "bar1").
 			QueryString("foo", "bar2").
-			OnReply(StatusAny, ReturnError(errors.New("unexpected status"))).
-			OnReply(StatusIsOneOf(http.StatusOK, http.StatusAccepted), ReturnError(expectedError)).
+			OnReplyIf(StatusAny, ThenReturnError(errors.New("unexpected status"))).
+			OnReplyIf(StatusIsOneOf(http.StatusOK, http.StatusAccepted), ThenReturnError(expectedError)).
 			Send()
 
 		c.Require().ErrorIs(err, expectedError)

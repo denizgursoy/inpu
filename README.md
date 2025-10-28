@@ -128,7 +128,7 @@ err := inpu.Get("https://jsonplaceholder.typicode.com/todos").
 ## Create clients
 ```go
 client := New().
-		UseMiddlewares(RetryMiddleware(2)).// add middlewares
+		Use(RetryMiddleware(2)).// add middlewares
 		BasePath("https://jsonplaceholder.typicode.com"). // prepends base path to every call uri
 		TimeOutIn(time.Second *5). // causes every request created from the client to expire in the duration
 		// following are added to every request created form the client

@@ -22,8 +22,8 @@ func main() {
 	client := inpu.
 		New().
 		BasePath("https://jsonplaceholder.typicode.com").
-		UseMiddleware(inpu.LoggingMiddleware(false, false)).
-		UseMiddleware(inpu.RequestIDMiddleware())
+		Use(inpu.LoggingMiddleware(false, false)).
+		Use(inpu.RequestIDMiddleware())
 
 	filteredTodos := make([]ToDo, 0)
 	err := client.Get("/todos").

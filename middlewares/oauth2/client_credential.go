@@ -30,7 +30,7 @@ func (m *ClientCredentialsMiddleware) ID() string {
 }
 
 func (m *ClientCredentialsMiddleware) Priority() int {
-	return 4
+	return 75
 }
 
 func (m *ClientCredentialsMiddleware) Apply(next http.RoundTripper) http.RoundTripper {

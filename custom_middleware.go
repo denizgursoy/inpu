@@ -63,7 +63,7 @@ func ErrorHandlerMiddleware(handler ErrorHandler) Middleware {
 		}
 
 		return response, nil
-	}, "error-handling-middleware", 3)
+	}, "error-handling-middleware", 50)
 }
 
 func (t *customMiddleware) ID() string {

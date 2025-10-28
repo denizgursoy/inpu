@@ -55,7 +55,7 @@ func (t *retryMiddleware) ID() string {
 }
 
 func (t *retryMiddleware) Priority() int {
-	return 2
+	return 25
 }
 
 func (t *retryMiddleware) Apply(next http.RoundTripper) http.RoundTripper {

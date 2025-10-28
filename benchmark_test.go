@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -15,7 +16,7 @@ const testCount = 5_000
 func Benchmark_Client_Standard(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		w.Write([]byte(`{"foo":"bar"}`))
 	}))
 	defer server.Close()
 
@@ -43,6 +44,10 @@ func Benchmark_Client_Standard(b *testing.B) {
 		req.URL.RawQuery = query.Encode()
 
 		resp, _ := client.Do(req)
+		all, _ := io.ReadAll(resp.Body)
+		parsedMap := make(map[string]any)
+		json.Unmarshal(all, &parsedMap)
+
 		resp.Body.Close()
 	}
 }
@@ -50,7 +55,7 @@ func Benchmark_Client_Standard(b *testing.B) {
 func Benchmark_Client_Inpu(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		w.Write([]byte(`{"foo":"bar"}`))
 	}))
 	defer server.Close()
 
@@ -69,7 +74,12 @@ func Benchmark_Client_Inpu(b *testing.B) {
 			paramValue := generateRandomString(15)
 			req.QueryString(paramName, paramValue)
 		}
-		err := req.Send()
+		parsedMap := make(map[string]any)
+
+		err := req.
+			OnReplyIf(StatusIsOk, ThenUnmarshalJsonTo(&parsedMap)).
+			OnReplyIf(StatusAny, ThenReturnDefaultError).
+			Send()
 		if err != nil {
 			return
 		}

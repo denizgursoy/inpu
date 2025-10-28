@@ -47,7 +47,6 @@ func Benchmark_Client_Standard(b *testing.B) {
 	}
 }
 
-// BenchmarkCustomClient_Do measures your custom client library
 func Benchmark_Client_Inpu(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

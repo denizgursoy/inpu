@@ -26,7 +26,7 @@ func (c *ClientSuite) Test_RetryMiddleware() {
 
 	defer server.Close()
 
-	client := New().UseMiddlewares(RetryMiddleware(2))
+	client := New().UseMiddleware(RetryMiddleware(2))
 
 	err := client.Get(server.URL).
 		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
@@ -47,7 +47,7 @@ func (c *ClientSuite) Test_No_Retry_On_CertificateVerificationError_Error() {
 
 	defer server.Close()
 
-	client := New().UseMiddlewares(RetryMiddleware(2))
+	client := New().UseMiddleware(RetryMiddleware(2))
 
 	err := client.Get(server.URL).
 		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
@@ -75,7 +75,7 @@ func (c *ClientSuite) Test_Retry_On_429() {
 
 	defer server.Close()
 
-	client := New().UseMiddlewares(RetryMiddleware(2))
+	client := New().UseMiddleware(RetryMiddleware(2))
 
 	err := client.Get(server.URL).
 		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
@@ -99,7 +99,7 @@ func (c *ClientSuite) Test_No_Try_On_The_Non_Retriable_Server_Errors() {
 
 			defer server.Close()
 
-			client := New().UseMiddlewares(RetryMiddleware(2))
+			client := New().UseMiddleware(RetryMiddleware(2))
 
 			err := client.Get(server.URL).
 				OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
@@ -114,7 +114,7 @@ func (c *ClientSuite) Test_No_Try_On_The_Non_Retriable_Server_Errors() {
 func (c *ClientSuite) Test_UnsuccessfulRetryError() {
 	c.T().Parallel()
 	c.T().Log("should not panic because of nil response")
-	client := New().UseMiddlewares(RetryMiddleware(2))
+	client := New().UseMiddleware(RetryMiddleware(2))
 
 	err := client.Get("http://127.0.0.1:7777").
 		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
@@ -145,7 +145,7 @@ func (c *ClientSuite) Test_Wait_By_Retry_After_Value() {
 
 	defer server.Close()
 
-	client := New().UseMiddlewares(RetryMiddleware(2))
+	client := New().UseMiddleware(RetryMiddleware(2))
 
 	err := client.
 		Get(server.URL).
@@ -170,7 +170,7 @@ func (c *ClientSuite) Test_Custom_Retry_Function() {
 
 	defer server.Close()
 
-	client := New().UseMiddlewares(RetryMiddlewareWithConfig(RetryConfig{
+	client := New().UseMiddleware(RetryMiddlewareWithConfig(RetryConfig{
 		MaxRetries:        2,
 		InitialBackoff:    500 * time.Millisecond,
 		MaxBackoff:        30 * time.Second,

@@ -20,7 +20,7 @@ func (c *ClientSuite) Test_RequestModifierMiddleware() {
 	defer server.Close()
 
 	client := New().
-		UseMiddlewares(RequestModifierMiddleware(func(request *http.Request) (*http.Request, error) {
+		UseMiddleware(RequestModifierMiddleware(func(request *http.Request) (*http.Request, error) {
 			request.Header.Add("foo", "bar")
 			query := request.URL.Query()
 			query.Add("foo1", "bar1")
@@ -49,7 +49,7 @@ func (c *ClientSuite) Test_RequestIDMiddleware() {
 	defer server.Close()
 
 	err := New().
-		UseMiddlewares(RequestIDMiddleware()).
+		UseMiddleware(RequestIDMiddleware()).
 		Get(server.URL).
 		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
@@ -77,7 +77,7 @@ func (c *ClientSuite) Test_ErrorHandlerMiddleware() {
 	defer server.Close()
 
 	err := New().
-		UseMiddlewares(ErrorHandlerMiddleware(func(err error) error {
+		UseMiddleware(ErrorHandlerMiddleware(func(err error) error {
 			return errors.Join(processedError, httpError)
 		})).
 		Get(server.URL).

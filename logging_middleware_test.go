@@ -24,7 +24,7 @@ func (c *ClientSuite) Test_LoggingMiddleware_Level_info() {
 
 	client := New().
 		BasePath(server.URL).
-		UseMiddlewares(lgMiddleware).
+		UseMiddleware(lgMiddleware).
 		Header(HeaderAPISecret, "HeaderAPISecret").
 		Header(HeaderAPIKey, "HeaderAPIKey").
 		Header(HeaderAPIToken, "HeaderAPIToken").
@@ -70,7 +70,7 @@ func (c *ClientSuite) Test_LoggingMiddleware() {
 
 	client := New().
 		BasePath(server.URL).
-		UseMiddlewares(lgMiddleware).
+		UseMiddleware(lgMiddleware).
 		Header(HeaderAPISecret, "HeaderAPISecret").
 		Header(HeaderAPIKey, "HeaderAPIKey").
 		Header(HeaderAPIToken, "HeaderAPIToken").
@@ -115,7 +115,7 @@ func (c *ClientSuite) Test_LoggingMiddleware_Disabled() {
 
 	client := New().
 		BasePath(server.URL).
-		UseMiddlewares(lgMiddleware).
+		UseMiddleware(lgMiddleware).
 		Header(HeaderAPISecret, "HeaderAPISecret").
 		Header(HeaderAPIKey, "HeaderAPIKey").
 		Header(HeaderAPIToken, "HeaderAPIToken").

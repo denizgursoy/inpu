@@ -10,7 +10,7 @@ import (
 func (c *ClientSuite) Test_Client_No_Duplicate_Middleware() {
 	secondActiveMiddleWare := LoggingMiddleware(true, true)
 	client := New().
-		UseMiddlewares(
+		UseMiddleware(
 			LoggingMiddleware(true, false),
 			secondActiveMiddleWare,
 		)
@@ -36,7 +36,7 @@ func (c *ClientSuite) Test_Client_MiddlewareOrders() {
 	requestIDMiddleware := RequestIDMiddleware()
 	client := New().
 		BasePath(server.URL).
-		UseMiddlewares(
+		UseMiddleware(
 			loggingMiddleware,
 			retryMiddleware,
 			requestIDMiddleware)
@@ -60,7 +60,7 @@ func (c *ClientSuite) Test_IgnoreNilMiddleware() {
 	defer server.Close()
 
 	client := New().
-		UseMiddlewares(nil, RequestIDMiddleware(), nil)
+		UseMiddleware(nil, RequestIDMiddleware(), nil)
 
 	err := client.
 		Get(server.URL).

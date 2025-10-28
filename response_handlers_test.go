@@ -99,7 +99,7 @@ func (c *ClientSuite) Test_Response_Body_Closed() {
 	defer server.Close()
 
 	var closedBody *spyBody
-	client := New().UseMiddlewares(ResponseModifierMiddleware(func(response *http.Response, server error) (*http.Response, error) {
+	client := New().UseMiddleware(ResponseModifierMiddleware(func(response *http.Response, server error) (*http.Response, error) {
 		// Wrap the body
 		closedBody = &spyBody{
 			ReadCloser: response.Body,

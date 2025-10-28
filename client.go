@@ -130,7 +130,7 @@ func (c *Client) Header(key, val string) *Client {
 	return c
 }
 
-func (c *Client) UseMiddlewares(mws ...Middleware) *Client {
+func (c *Client) UseMiddleware(mws ...Middleware) *Client {
 	for i := range mws {
 		if mws[i] == nil {
 			continue

@@ -496,15 +496,13 @@ func (r *Req) Send() error {
 				var allErrors error
 				handlers := r.replies[i].responseHandlers
 				for j := range handlers {
-					if err := handlers[j](httpResponse); err != nil {
-						if len(handlers) == 1 {
-							return err
+					if handlers[j] != nil {
+						if err := handlers[j](httpResponse); err != nil {
+							allErrors = errors.Join(allErrors, err)
 						}
-
-						allErrors = errors.Join(allErrors, err)
 					}
-
 				}
+
 				return allErrors
 			}
 		}

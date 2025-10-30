@@ -2,6 +2,7 @@ package inpu
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,8 +14,8 @@ import (
 )
 
 type replyBehavior struct {
-	statusMatcher   StatusMatcher
-	responseHandler ResponseHandler
+	statusMatcher    StatusMatcher
+	responseHandlers []ResponseHandler
 }
 
 type Req struct {
@@ -450,10 +451,10 @@ func (r *Req) TimeOutIn(duration time.Duration) *Req {
 // OnReplyIf(StatusIs(http.StatusOK), ThenReturnError(errors.New("something happened again"))) // second one
 //
 // It will return errors.New("something happened")
-func (r *Req) OnReplyIf(statusMatcher StatusMatcher, responseHandler ResponseHandler) *Req {
+func (r *Req) OnReplyIf(statusMatcher StatusMatcher, responseHandler ...ResponseHandler) *Req {
 	r.replies = append(r.replies, replyBehavior{
-		statusMatcher:   statusMatcher,
-		responseHandler: responseHandler,
+		statusMatcher:    statusMatcher,
+		responseHandlers: responseHandler,
 	})
 
 	return r
@@ -492,7 +493,19 @@ func (r *Req) Send() error {
 		matcher := r.replies[i].statusMatcher
 		if matcher != nil {
 			if matcher.Match(httpResponse.StatusCode) {
-				return r.replies[i].responseHandler(httpResponse)
+				var allErrors error
+				handlers := r.replies[i].responseHandlers
+				for j := range handlers {
+					if err := handlers[j](httpResponse); err != nil {
+						if len(handlers) == 1 {
+							return err
+						}
+
+						allErrors = errors.Join(allErrors, err)
+					}
+
+				}
+				return allErrors
 			}
 		}
 	}

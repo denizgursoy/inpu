@@ -539,3 +539,30 @@ func (c *ClientSuite) Test_QueryPtrNil_ThenNonNil() {
 	// bar should exist
 	c.Require().Equal([]string{"555"}, req.queries["bar"])
 }
+
+func (c *ClientSuite) Test_Multiple_Response_Handler() {
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"foo":"bar"}`))
+	}))
+	defer server.Close()
+
+	expectedError := errors.New("expected error")
+	result := testModel{}
+	err := Post(server.URL, nil).
+		OnReplyIf(StatusIs(http.StatusOK),
+			ThenUnmarshalJsonTo(&result),
+			ThenReturnDefaultError,
+			ThenReturnError(expectedError),
+		).Send()
+	expectedResponse := testModel{
+		Foo: "bar",
+	}
+	defaultError := &DefaultError{}
+
+	c.Require().Equal(expectedResponse, result)
+	c.Require().Error(err)
+	c.Require().ErrorIs(err, expectedError)
+	c.Require().ErrorAs(err, &defaultError)
+}

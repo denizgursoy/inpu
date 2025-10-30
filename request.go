@@ -2,6 +2,7 @@ package inpu
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,8 +14,8 @@ import (
 )
 
 type replyBehavior struct {
-	statusMatcher   StatusMatcher
-	responseHandler ResponseHandler
+	statusMatcher    StatusMatcher
+	responseHandlers []ResponseHandler
 }
 
 type Req struct {
@@ -450,17 +451,32 @@ func (r *Req) TimeOutIn(duration time.Duration) *Req {
 // OnReplyIf(StatusIs(http.StatusOK), ThenReturnError(errors.New("something happened again"))) // second one
 //
 // It will return errors.New("something happened")
-func (r *Req) OnReplyIf(statusMatcher StatusMatcher, responseHandler ResponseHandler) *Req {
+func (r *Req) OnReplyIf(statusMatcher StatusMatcher, responseHandler ...ResponseHandler) *Req {
 	r.replies = append(r.replies, replyBehavior{
-		statusMatcher:   statusMatcher,
-		responseHandler: responseHandler,
+		statusMatcher:    statusMatcher,
+		responseHandlers: responseHandler,
 	})
 
 	return r
 }
 
 func (r *Req) Send() error {
+	ctx := context.Background()
+	if r.httpReq != nil {
+		ctx = r.httpReq.Context()
+	}
+
+	logger := ExtractLoggerFromContext(ctx)
+
+	defer func() {
+		if reason := recover(); reason != nil {
+			logger.Error(ctx, ErrPanickedDuringTheCall, "recovering from panic: %v", reason)
+		}
+	}()
+
 	if !r.isSuccessfullyCreated() {
+		logger.Debug(ctx, "could not create the request: %w", r.requestCreationError)
+
 		return r.requestCreationError
 	}
 
@@ -472,7 +488,7 @@ func (r *Req) Send() error {
 	}
 
 	if r.timeOut > 0 {
-		timeoutCtx, cancel := context.WithTimeout(r.httpReq.Context(), r.timeOut)
+		timeoutCtx, cancel := context.WithTimeout(ctx, r.timeOut)
 		defer cancel()
 
 		r.httpReq = r.httpReq.WithContext(timeoutCtx)
@@ -480,6 +496,8 @@ func (r *Req) Send() error {
 
 	httpResponse, err := client.Do(r.httpReq)
 	if err != nil {
+		logger.Debug(ctx, "request failed: %w", err)
+
 		return fmt.Errorf("%w: %w", ErrConnectionFailed, err)
 	}
 
@@ -492,7 +510,21 @@ func (r *Req) Send() error {
 		matcher := r.replies[i].statusMatcher
 		if matcher != nil {
 			if matcher.Match(httpResponse.StatusCode) {
-				return r.replies[i].responseHandler(httpResponse)
+				var allErrors error
+				handlers := r.replies[i].responseHandlers
+				for j := range handlers {
+					if handlers[j] != nil {
+						if err := handlers[j](httpResponse); err != nil {
+							allErrors = errors.Join(allErrors, err)
+						}
+					}
+				}
+
+				if allErrors != nil {
+					logger.Debug(ctx, "failed to process response: %s", allErrors.Error())
+				}
+
+				return allErrors
 			}
 		}
 	}

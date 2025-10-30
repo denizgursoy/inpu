@@ -66,6 +66,10 @@ test-bench:
 	@echo "$(GREEN)Running benchmarks...$(NC)"
 	go test -bench=. -benchmem ./...
 
+test-bench-client:
+	@echo "$(GREEN)Running benchmarks for clients...$(NC)"
+	go test -bench=Benchmark_Client -benchmem -benchtime=2000x -run=^$
+
 ## test-all: Run tests, race detector, and coverage
 test-all: test test-race coverage-html
 	@echo "$(GREEN)All tests completed!$(NC)"

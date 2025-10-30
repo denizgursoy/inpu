@@ -117,6 +117,51 @@ func (c *ClientSuite) Test_Response_Body_Closed() {
 	c.Require().True(closedBody.isClosed)
 }
 
+func (c *ClientSuite) Test_Multiple_Response_Handler() {
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"foo":"bar"}`))
+	}))
+	defer server.Close()
+
+	expectedError := errors.New("expected error")
+	result := testModel{}
+	err := Post(server.URL, nil).
+		OnReplyIf(StatusIs(http.StatusOK),
+			ThenUnmarshalJsonTo(&result),
+			ThenReturnDefaultError,
+			ThenReturnError(expectedError),
+		).Send()
+	expectedResponse := testModel{
+		Foo: "bar",
+	}
+	defaultError := &DefaultError{}
+
+	c.Require().Equal(expectedResponse, result)
+	c.Require().Error(err)
+	c.Require().ErrorIs(err, expectedError)
+	c.Require().ErrorAs(err, &defaultError)
+}
+
+func (c *ClientSuite) Test_Response_Handler_Recover_On_Panic() {
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"foo":"bar"}`))
+	}))
+	defer server.Close()
+
+	err := Post(server.URL, nil).
+		OnReplyIf(StatusIs(http.StatusOK),
+			func(response *http.Response) error {
+				panic("")
+				return nil
+			},
+		).Send()
+	c.Require().NoError(err)
+}
+
 type spyBody struct {
 	io.ReadCloser
 	isClosed bool

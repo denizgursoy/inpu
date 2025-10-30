@@ -13,7 +13,8 @@ var (
 	ErrCouldNotParseBaseUrl  = errors.New("invalid base path")
 	ErrCouldNotParsePath     = errors.New("invalid path")
 	ErrMarshalToNil          = errors.New("cannot unmarshal to nil")
-	ErrNotPointerParameter   = errors.New("cannot marshal to non pointer type ")
+	ErrNotPointerParameter   = errors.New("cannot marshal to non pointer type")
+	ErrPanickedDuringTheCall = errors.New("panicked on send")
 )
 
 type DefaultError struct {

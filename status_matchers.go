@@ -34,7 +34,7 @@ func (s *statusChecker) Match(statusCode int) bool {
 // StatusIsOneOf -> 2
 // StatusIsInformational, StatusIsSuccess, StatusIsRedirection, StatusIsClientError, StatusIsServerError -> 3
 // StatusAnyExcept -> 8
-// StatusAnyExceptOneOf ->
+// StatusAnyExceptOneOf -> 9
 // StatusAny -> 10
 func (s *statusChecker) Priority() int {
 	return s.priority

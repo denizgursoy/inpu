@@ -2,6 +2,7 @@ package inpu
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"reflect"
 )
@@ -26,6 +27,19 @@ func ThenUnmarshalJsonTo(targetAsPointer any) ResponseHandler {
 		}
 
 		return json.NewDecoder(r.Body).Decode(targetAsPointer)
+	}
+}
+
+// ThenUnmarshalJsonAndReturnError marshals the body to the pointer with ThenUnmarshalJsonTo and returns provided error.
+// Usage:
+// OnReplyIf(StatusAny, ThenUnmarshalJsonAndReturnError(&items, errors.New("request failed")))
+func ThenUnmarshalJsonAndReturnError(targetAsPointer any, err error) ResponseHandler {
+	return func(response *http.Response) error {
+		if marshalError := ThenUnmarshalJsonTo(targetAsPointer)(response); err != nil {
+			return errors.Join(marshalError, err)
+		}
+
+		return err
 	}
 }
 

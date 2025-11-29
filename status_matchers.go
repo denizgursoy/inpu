@@ -34,7 +34,7 @@ func (s *statusChecker) Match(statusCode int) bool {
 // StatusIsOneOf -> 2
 // StatusIsInformational, StatusIsSuccess, StatusIsRedirection, StatusIsClientError, StatusIsServerError -> 3
 // StatusAnyExcept -> 8
-// StatusAnyExceptOneOf -> 9
+// StatusAnyExceptOneOf ->
 // StatusAny -> 10
 func (s *statusChecker) Priority() int {
 	return s.priority
@@ -633,6 +633,15 @@ var StatusIsNotExtended = newStatusChecker(func(statusCode int) bool {
 var StatusIsNetworkAuthenticationRequired = newStatusChecker(func(statusCode int) bool {
 	return statusCode == http.StatusNetworkAuthenticationRequired
 }, 1)
+
+var Not = func(matcher StatusMatcher) *statusChecker {
+	return &statusChecker{
+		matcher: func(statusCode int) bool {
+			return !matcher.Match(statusCode)
+		},
+		priority: matcher.Priority(),
+	}
+}
 
 func DrainBodyAndClose(response *http.Response) error {
 	if response != nil && response.Body != nil {

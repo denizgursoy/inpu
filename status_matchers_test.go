@@ -480,3 +480,10 @@ func (c *ClientSuite) Test_StatusIsNetworkAuthenticationRequired() {
 	c.Require().False(StatusIsNetworkAuthenticationRequired.Match(http.StatusUnauthorized))
 	c.Require().False(StatusIsNetworkAuthenticationRequired.Match(http.StatusProxyAuthRequired))
 }
+
+func (c *ClientSuite) Test_StatusNot() {
+	c.T().Parallel()
+	c.Require().True(Not(StatusIsOk).Match(http.StatusUnauthorized))
+	c.Require().False(Not(StatusIsUnauthorized).Match(http.StatusUnauthorized))
+	c.Require().True(Not(StatusIsClientError).Match(http.StatusBadGateway))
+}

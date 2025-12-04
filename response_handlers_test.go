@@ -29,6 +29,28 @@ func (c *ClientSuite) Test_Response_UnmarshalJson() {
 	c.Require().Equal(expectedResponse, result)
 }
 
+func (c *ClientSuite) Test_Response_UnmarshalJson_Return_Error() {
+	c.T().Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"foo":"bar"}`))
+	}))
+	defer server.Close()
+
+	expectedError := errors.New("something failed")
+	result := testModel{}
+	req := Post(server.URL, nil).
+		OnReplyIf(StatusIs(http.StatusOK), ThenUnmarshalJsonAndReturnError(&result, expectedError))
+
+	err := req.Send()
+	c.Require().ErrorIs(err, expectedError)
+
+	expectedResponse := testModel{
+		Foo: "bar",
+	}
+	c.Require().Equal(expectedResponse, result)
+}
+
 func (c *ClientSuite) Test_Response_No_Nil_Parameter() {
 	c.T().Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {

@@ -634,6 +634,15 @@ var StatusIsNetworkAuthenticationRequired = newStatusChecker(func(statusCode int
 	return statusCode == http.StatusNetworkAuthenticationRequired
 }, 1)
 
+var Not = func(matcher StatusMatcher) *statusChecker {
+	return &statusChecker{
+		matcher: func(statusCode int) bool {
+			return !matcher.Match(statusCode)
+		},
+		priority: matcher.Priority(),
+	}
+}
+
 func DrainBodyAndClose(response *http.Response) error {
 	if response != nil && response.Body != nil {
 		ctx := response.Request.Context()

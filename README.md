@@ -47,35 +47,35 @@ Available shorthand methods for individual status codes:
 
 | 1xx Informational | 2xx Success | 3xx Redirection | 4xx Client Error | 5xx Server Error |
 |---|---|---|---|---|
-| OnContinue | OnOk | OnMultipleChoices | OnBadRequest | OnInternalServerError |
-| OnSwitchingProtocols | OnCreated | OnMovedPermanently | OnUnauthorized | OnNotImplemented |
-| OnProcessing | OnAccepted | OnFound | OnPaymentRequired | OnBadGateway |
-| OnEarlyHints | OnNonAuthoritativeInfo | OnSeeOther | OnForbidden | OnServiceUnavailable |
-| | OnNoContent | OnNotModified | OnNotFound | OnGatewayTimeout |
-| | OnResetContent | OnUseProxy | OnMethodNotAllowed | OnHTTPVersionNotSupported |
-| | OnPartialContent | OnTemporaryRedirect | OnNotAcceptable | OnVariantAlsoNegotiates |
-| | OnMultiStatus | OnPermanentRedirect | OnProxyAuthRequired | OnInsufficientStorage |
-| | OnAlreadyReported | | OnRequestTimeout | OnLoopDetected |
-| | OnIMUsed | | OnConflict | OnNotExtended |
-| | | | OnGone | OnNetworkAuthenticationRequired |
-| | | | OnLengthRequired | |
-| | | | OnPreconditionFailed | |
-| | | | OnRequestEntityTooLarge | |
-| | | | OnRequestURITooLong | |
-| | | | OnUnsupportedMediaType | |
-| | | | OnRequestedRangeNotSatisfiable | |
-| | | | OnExpectationFailed | |
-| | | | OnTeapot | |
-| | | | OnMisdirectedRequest | |
-| | | | OnUnprocessableEntity | |
-| | | | OnLocked | |
-| | | | OnFailedDependency | |
-| | | | OnTooEarly | |
-| | | | OnUpgradeRequired | |
-| | | | OnPreconditionRequired | |
-| | | | OnTooManyRequests | |
-| | | | OnRequestHeaderFieldsTooLarge | |
-| | | | OnUnavailableForLegalReasons | |
+| OnContinue (100) | OnOk (200) | OnMultipleChoices (300) | OnBadRequest (400) | OnInternalServerError (500) |
+| OnSwitchingProtocols (101) | OnCreated (201) | OnMovedPermanently (301) | OnUnauthorized (401) | OnNotImplemented (501) |
+| OnProcessing (102) | OnAccepted (202) | OnFound (302) | OnPaymentRequired (402) | OnBadGateway (502) |
+| OnEarlyHints (103) | OnNonAuthoritativeInfo (203) | OnSeeOther (303) | OnForbidden (403) | OnServiceUnavailable (503) |
+| | OnNoContent (204) | OnNotModified (304) | OnNotFound (404) | OnGatewayTimeout (504) |
+| | OnResetContent (205) | OnUseProxy (305) | OnMethodNotAllowed (405) | OnHTTPVersionNotSupported (505) |
+| | OnPartialContent (206) | OnTemporaryRedirect (307) | OnNotAcceptable (406) | OnVariantAlsoNegotiates (506) |
+| | OnMultiStatus (207) | OnPermanentRedirect (308) | OnProxyAuthRequired (407) | OnInsufficientStorage (507) |
+| | OnAlreadyReported (208) | | OnRequestTimeout (408) | OnLoopDetected (508) |
+| | OnIMUsed (226) | | OnConflict (409) | OnNotExtended (510) |
+| | | | OnGone (410) | OnNetworkAuthenticationRequired (511) |
+| | | | OnLengthRequired (411) | |
+| | | | OnPreconditionFailed (412) | |
+| | | | OnRequestEntityTooLarge (413) | |
+| | | | OnRequestURITooLong (414) | |
+| | | | OnUnsupportedMediaType (415) | |
+| | | | OnRequestedRangeNotSatisfiable (416) | |
+| | | | OnExpectationFailed (417) | |
+| | | | OnTeapot (418) | |
+| | | | OnMisdirectedRequest (421) | |
+| | | | OnUnprocessableEntity (422) | |
+| | | | OnLocked (423) | |
+| | | | OnFailedDependency (424) | |
+| | | | OnTooEarly (425) | |
+| | | | OnUpgradeRequired (426) | |
+| | | | OnPreconditionRequired (428) | |
+| | | | OnTooManyRequests (429) | |
+| | | | OnRequestHeaderFieldsTooLarge (431) | |
+| | | | OnUnavailableForLegalReasons (451) | |
 
 Category-level shorthands: `OnSuccess`, `OnInformational`, `OnRedirection`, `OnClientError`, `OnServerError`
 

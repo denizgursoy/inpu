@@ -288,24 +288,83 @@ func (c *ClientSuite) Test_Tls_verify_insecure() {
 	c.Require().NoError(err)
 }
 
-func (c *ClientSuite) Test_DisableHTTP2() {
+func (c *ClientSuite) Test_Default_Client_Uses_HTTP2_Over_TLS() {
 	c.T().Parallel()
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	var proto string
+	var protoMajor int
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		proto = r.Proto
+		protoMajor = r.ProtoMajor
 		w.WriteHeader(http.StatusOK)
 	}))
+	server.EnableHTTP2 = true
+	server.StartTLS()
+	defer server.Close()
+
+	err := New().
+		DisableTLSVerification().
+		Get(server.URL).
+		On(StatusIsOk, ThenDoNothing).
+		On(StatusAny, ThenReturnDefaultError).
+		Send()
+
+	c.Require().NoError(err)
+	c.Require().Equal("HTTP/2.0", proto)
+	c.Require().Equal(2, protoMajor)
+}
+
+func (c *ClientSuite) Test_DisableHTTP2_Falls_Back_To_HTTP11() {
+	c.T().Parallel()
+
+	var proto string
+	var protoMajor int
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		proto = r.Proto
+		protoMajor = r.ProtoMajor
+		w.WriteHeader(http.StatusOK)
+	}))
+	server.EnableHTTP2 = true
+	server.StartTLS()
 	defer server.Close()
 
 	client := New()
 	err := client.
+		DisableTLSVerification().
 		DisableHTTP2().
 		Get(server.URL).
-		On(StatusAny, ThenReturnDefaultError).
 		On(StatusIsOk, ThenDoNothing).
+		On(StatusAny, ThenReturnDefaultError).
 		Send()
 
 	c.Require().NoError(err)
+	c.Require().Equal("HTTP/1.1", proto)
+	c.Require().Equal(1, protoMajor)
 	c.Require().False(client.baseTransport.ForceAttemptHTTP2)
 	c.Require().Len(client.baseTransport.TLSNextProto, 0)
+}
+
+func (c *ClientSuite) Test_PlainHTTP_Uses_HTTP11() {
+	c.T().Parallel()
+
+	var proto string
+	var protoMajor int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		proto = r.Proto
+		protoMajor = r.ProtoMajor
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	err := New().
+		Get(server.URL).
+		On(StatusIsOk, ThenDoNothing).
+		On(StatusAny, ThenReturnDefaultError).
+		Send()
+
+	c.Require().NoError(err)
+	c.Require().Equal("HTTP/1.1", proto)
+	c.Require().Equal(1, protoMajor)
 }
 
 func (c *ClientSuite) Test_Tls_Get_Certificate_Error() {

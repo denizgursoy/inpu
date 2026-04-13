@@ -3,7 +3,7 @@ module github.com/denizgursoy/inpu/middlewares/otel
 go 1.25.0
 
 require (
-	github.com/denizgursoy/inpu v1.2.1-0.20251021215425-9424d5a10509
+	github.com/denizgursoy/inpu v1.4.0
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/metric v1.43.0
 	go.opentelemetry.io/otel/sdk v1.43.0

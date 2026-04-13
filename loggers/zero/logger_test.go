@@ -25,12 +25,12 @@ func TestNewInpuZeroLogger(t *testing.T) {
 	loggingMiddleware := inpu.LoggingMiddleware(true, false)
 	client := inpu.New().
 		BasePath(server.URL).
-		UseMiddlewares(loggingMiddleware)
+		Use(loggingMiddleware)
 
 	inpu.DefaultLogger = NewInpuLoggerFromZeroLog()
 
 	err := client.Post("/", nil).
-		OnReply(inpu.StatusAnyExcept(http.StatusOK), inpu.ReturnError(errors.New("unexpected status"))).
+		OnWhen(inpu.StatusAnyExcept(http.StatusOK), inpu.ThenReturnError(errors.New("unexpected status"))).
 		Send()
 	if err != nil {
 		t.FailNow()

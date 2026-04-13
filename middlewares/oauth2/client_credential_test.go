@@ -41,7 +41,7 @@ func TestClientCredentialsMiddleware(t *testing.T) {
 
 	client := inpu.New().
 		BasePath(apiServer.URL).
-		UseMiddlewares(middleware)
+		Use(middleware)
 
 	err := client.Get("/api/data").Send()
 	if err != nil {

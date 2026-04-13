@@ -44,13 +44,13 @@ func (c *ClientSuite) Test_Client() {
 		QueryInt("int", 1)
 
 	err := client.Get(server.URL).
-		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
+		OnWhen(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
 
 	err = client.Post(server.URL, BodyJson(testData)).
-		OnReplyIf(StatusAnyExcept(http.StatusCreated), ThenReturnError(errors.New("unexpected status"))).
+		OnWhen(StatusAnyExcept(http.StatusCreated), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -67,7 +67,7 @@ func (c *ClientSuite) Test_Client_Timeout() {
 	err := New().
 		TimeOutIn(200*time.Millisecond).
 		Get(server.URL).
-		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
+		OnWhen(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().ErrorIs(err, context.DeadlineExceeded)
@@ -84,7 +84,7 @@ func (c *ClientSuite) Test_Client_BasePath() {
 	err := New().
 		BasePath(server.URL).
 		Get("/people/1").
-		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
+		OnWhen(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -103,7 +103,7 @@ func (c *ClientSuite) Test_Client_Empty_BasePath() {
 		QueryBool("is_created", true).
 		Get("/people/1").
 		QueryString("foo", "bar").
-		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
+		OnWhen(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -122,7 +122,7 @@ func (c *ClientSuite) Test_Client_Empty_Uri() {
 		QueryBool("is_created", true).
 		Get("").
 		QueryString("foo", "bar").
-		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
+		OnWhen(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -141,7 +141,7 @@ func (c *ClientSuite) Test_Client_No_Duplicate_Slash() {
 		QueryBool("is_created", true).
 		Get("/").
 		QueryString("foo", "bar").
-		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
+		OnWhen(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -160,7 +160,7 @@ func (c *ClientSuite) Test_Client_No_Higher_Path_Than_Host() {
 		QueryBool("is_created", true).
 		Get("/../../../../../../test").
 		QueryString("foo", "bar").
-		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
+		OnWhen(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -216,8 +216,8 @@ func (c *ClientSuite) Test_Client_No_Redirect() {
 	err := New().
 		DisableRedirects().
 		Get(redirectServer.URL).
-		OnReplyIf(StatusIsRedirection, ThenReturnError(redirectionError)).
-		OnReplyIf(StatusAny, ThenReturnDefaultError).
+		OnWhen(StatusIsRedirection, ThenReturnError(redirectionError)).
+		OnWhen(StatusAny, ThenReturnDefaultError).
 		Send()
 
 	c.Require().ErrorIs(err, redirectionError)
@@ -225,8 +225,8 @@ func (c *ClientSuite) Test_Client_No_Redirect() {
 	err = New().
 		FollowRedirects(0). // should have same effect
 		Get(redirectServer.URL).
-		OnReplyIf(StatusIsRedirection, ThenReturnError(redirectionError)).
-		OnReplyIf(StatusAny, ThenReturnDefaultError).
+		OnWhen(StatusIsRedirection, ThenReturnError(redirectionError)).
+		OnWhen(StatusAny, ThenReturnDefaultError).
 		Send()
 
 	c.Require().ErrorIs(err, redirectionError)
@@ -259,9 +259,9 @@ func (c *ClientSuite) Test_Client_Redirect_Max_Count() {
 	err := New().
 		FollowRedirects(3).
 		Get(redirectServer.URL).
-		OnReplyIf(StatusIsOk, ThenDoNothing).
-		OnReplyIf(StatusIsRedirection, ThenReturnError(redirectionError)).
-		OnReplyIf(StatusAny, ThenReturnDefaultError).
+		OnWhen(StatusIsOk, ThenDoNothing).
+		OnWhen(StatusIsRedirection, ThenReturnError(redirectionError)).
+		OnWhen(StatusAny, ThenReturnDefaultError).
 		Send()
 
 	c.Require().NoError(err)
@@ -280,8 +280,8 @@ func (c *ClientSuite) Test_Tls_verify_insecure() {
 	err := client.
 		DisableTLSVerification().
 		Get(server.URL).
-		OnReplyIf(StatusAny, ThenReturnDefaultError).
-		OnReplyIf(StatusIsOk, ThenDoNothing).
+		OnWhen(StatusAny, ThenReturnDefaultError).
+		OnWhen(StatusIsOk, ThenDoNothing).
 		Send()
 
 	c.Require().True(client.baseTransport.TLSClientConfig.InsecureSkipVerify)
@@ -299,8 +299,8 @@ func (c *ClientSuite) Test_DisableHTTP2() {
 	err := client.
 		DisableHTTP2().
 		Get(server.URL).
-		OnReplyIf(StatusAny, ThenReturnDefaultError).
-		OnReplyIf(StatusIsOk, ThenDoNothing).
+		OnWhen(StatusAny, ThenReturnDefaultError).
+		OnWhen(StatusIsOk, ThenDoNothing).
 		Send()
 
 	c.Require().NoError(err)
@@ -373,7 +373,7 @@ func (c *ClientSuite) Test_Client_Cookie() {
 
 	// Second request: server should see the cookie sent by the client
 	err = client.Get(server.URL+"/check").
-		OnReplyIf(StatusAnyExcept(http.StatusOK), ThenReturnDefaultError).
+		OnWhen(StatusAnyExcept(http.StatusOK), ThenReturnDefaultError).
 		Send()
 	c.Require().NoError(err)
 }

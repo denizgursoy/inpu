@@ -425,7 +425,7 @@ func (r *Req) TimeOutIn(duration time.Duration) *Req {
 	return r
 }
 
-// OnReplyIf adds status matcher and response handler configurations.
+// OnWhen adds status matcher and response handler configurations.
 // In case a status is matched by status matcher, its response handler is executed. However, status matchers have priorities.
 // The less priority is the higher precedence on the matching.
 // Current status matcher priorities are:
@@ -437,20 +437,20 @@ func (r *Req) TimeOutIn(duration time.Duration) *Req {
 // StatusAny -> 10
 // Based on the response only one reply is executed. For example:
 //
-// OnReplyIf(StatusIs(http.StatusOK), ThenReturnError(errors.New("something happened"))). // first one
-// OnReplyIf(StatusIsSuccess, ThenReturnError(errors.New("something happened again"))). // second one
-// OnReplyIf(StatusAny, ThenReturnError(errors.New("something happened again and again"))) // third one
+// OnWhen(StatusIs(http.StatusOK), ThenReturnError(errors.New("something happened"))). // first one
+// OnWhen(StatusIsSuccess, ThenReturnError(errors.New("something happened again"))). // second one
+// OnWhen(StatusAny, ThenReturnError(errors.New("something happened again and again"))) // third one
 //
 // It will execute the first response handler if the status code is 200 and return errors.New("something happened")
 // It will execute the second response handler if the status code is 201 and return errors.New("something happened again")
 // It will execute the third response handler if the status code is 500 or any other status code which is not success in this example and return errors.New("something happened again and again")
 // Multiple same matcher on the same priority can be added but only first one in the addition order will be executed. For example:
 //
-// OnReplyIf(StatusIs(http.StatusOK), ThenReturnError(errors.New("something happened"))). // first one
-// OnReplyIf(StatusIs(http.StatusOK), ThenReturnError(errors.New("something happened again"))) // second one
+// OnWhen(StatusIs(http.StatusOK), ThenReturnError(errors.New("something happened"))). // first one
+// OnWhen(StatusIs(http.StatusOK), ThenReturnError(errors.New("something happened again"))) // second one
 //
 // It will return errors.New("something happened")
-func (r *Req) OnReplyIf(statusMatcher StatusMatcher, responseHandler ResponseHandler) *Req {
+func (r *Req) OnWhen(statusMatcher StatusMatcher, responseHandler ResponseHandler) *Req {
 	r.replies = append(r.replies, replyBehavior{
 		statusMatcher:   statusMatcher,
 		responseHandler: responseHandler,

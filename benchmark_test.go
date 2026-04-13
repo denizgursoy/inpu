@@ -77,8 +77,8 @@ func Benchmark_Client_Inpu(b *testing.B) {
 		parsedMap := make(map[string]any)
 
 		err := req.
-			OnReplyIf(StatusIsOk, ThenUnmarshalJsonTo(&parsedMap)).
-			OnReplyIf(StatusAny, ThenReturnDefaultError).
+			OnWhen(StatusIsOk, ThenUnmarshalJsonTo(&parsedMap)).
+			OnWhen(StatusAny, ThenReturnDefaultError).
 			Send()
 		if err != nil {
 			return

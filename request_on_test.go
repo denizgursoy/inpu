@@ -97,7 +97,7 @@ func (c *ClientSuite) Test_On_StatusCode_Shorthand() {
 
 	called := false
 	err := New().Get(server.URL).
-		On(http.StatusCreated, func(_ *http.Response) error {
+		On(StatusIs(http.StatusCreated), func(_ *http.Response) error {
 			called = true
 			return nil
 		}).

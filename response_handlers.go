@@ -7,7 +7,7 @@ import (
 	"reflect"
 )
 
-// ResponseHandler is the function you pass along with a status matcher in the OnWhen call.
+// ResponseHandler is the function you pass along with a status matcher in the On call.
 // It can be
 type ResponseHandler func(response *http.Response) error
 
@@ -15,7 +15,7 @@ type ResponseHandler func(response *http.Response) error
 // It checks if the type is pointer as well.
 // It does not close the body because body is closed after this function is called by the caller
 // Usage:
-// OnWhen(StatusAny, ThenUnmarshalJsonTo(&items))
+// On(StatusAny, ThenUnmarshalJsonTo(&items))
 func ThenUnmarshalJsonTo(targetAsPointer any) ResponseHandler {
 	return func(r *http.Response) error {
 		if targetAsPointer == nil {
@@ -32,7 +32,7 @@ func ThenUnmarshalJsonTo(targetAsPointer any) ResponseHandler {
 
 // ThenUnmarshalJsonAndReturnError marshals the body to the pointer with ThenUnmarshalJsonTo and returns provided error.
 // Usage:
-// OnWhen(StatusAny, ThenUnmarshalJsonAndReturnError(&items, errors.New("request failed")))
+// On(StatusAny, ThenUnmarshalJsonAndReturnError(&items, errors.New("request failed")))
 func ThenUnmarshalJsonAndReturnError(targetAsPointer any, err error) ResponseHandler {
 	return func(response *http.Response) error {
 		if marshalError := ThenUnmarshalJsonTo(targetAsPointer)(response); err != nil {
@@ -45,7 +45,7 @@ func ThenUnmarshalJsonAndReturnError(targetAsPointer any, err error) ResponseHan
 
 // ThenReturnError returns the provided error directly in case of status is matched
 // Usage:
-// OnWhen(StatusAny, ThenReturnError(errors.New("something happened")))
+// On(StatusAny, ThenReturnError(errors.New("something happened")))
 func ThenReturnError(err error) ResponseHandler {
 	return func(_ *http.Response) error {
 		return err
@@ -54,7 +54,7 @@ func ThenReturnError(err error) ResponseHandler {
 
 // ThenReturnDefaultError returns an error that contains the request method, requests URL and the status code
 // Usage:
-// OnWhen(StatusAny, ThenReturnDefaultError)
+// On(StatusAny, ThenReturnDefaultError)
 func ThenReturnDefaultError(r *http.Response) error {
 	return &DefaultError{
 		res: r,
@@ -63,7 +63,7 @@ func ThenReturnDefaultError(r *http.Response) error {
 
 // ThenDoNothing returns nil error
 // Usage:
-// OnWhen(StatusAny, ThenDoNothing)
+// On(StatusAny, ThenDoNothing)
 func ThenDoNothing(_ *http.Response) error {
 	return nil
 }

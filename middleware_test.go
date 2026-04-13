@@ -42,7 +42,7 @@ func (c *ClientSuite) Test_Client_MiddlewareOrders() {
 			requestIDMiddleware)
 
 	err := client.Post("/", BodyJson(testData)).
-		OnWhen(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
+		On(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -64,7 +64,7 @@ func (c *ClientSuite) Test_IgnoreNilMiddleware() {
 
 	err := client.
 		Get(server.URL).
-		OnWhen(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
+		On(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)

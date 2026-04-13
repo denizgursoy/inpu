@@ -20,8 +20,8 @@ func main() {
 	err := inpu.Get("https://jsonplaceholder.typicode.com/todos").
 		QueryBool("completed", true).
 		QueryInt("userId", 2).
-		OnWhen(inpu.StatusIsOk, inpu.ThenUnmarshalJsonTo(&filteredTodos)).
-		OnWhen(inpu.StatusAny, inpu.ThenReturnDefaultError).
+		On(inpu.StatusIsOk, inpu.ThenUnmarshalJsonTo(&filteredTodos)).
+		On(inpu.StatusAny, inpu.ThenReturnDefaultError).
 		Send()
 	if err != nil {
 		log.Fatal(err)

@@ -258,14 +258,14 @@ Category-level shorthands: `OnSuccess`, `OnInformational`, `OnRedirection`, `OnC
 
 Wildcard shorthands: `OnAny`, `OnAnyExcept`, `OnAnyExceptOneOf`
 
-### OnWhen (Advanced Usage)
+### On (Advanced Usage)
 
-`OnWhen` provides full control over status matching. Use it when combining matchers with `Not()` or for other advanced patterns:
+`On` provides full control over status matching. Use it when combining matchers with `Not()` or for other advanced patterns:
 
 ```go
 err := inpu.Get("https://api.example.com/items").
-    OnWhen(inpu.StatusIsSuccess, inpu.ThenUnmarshalJsonTo(&items)).
-    OnWhen(inpu.Not(inpu.StatusIsSuccess), inpu.ThenReturnDefaultError).
+    On(inpu.StatusIsSuccess, inpu.ThenUnmarshalJsonTo(&items)).
+    On(inpu.Not(inpu.StatusIsSuccess), inpu.ThenReturnDefaultError).
     Send()
 ```
 

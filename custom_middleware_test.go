@@ -33,7 +33,7 @@ func (c *ClientSuite) Test_RequestModifierMiddleware() {
 		Get(server.URL).
 		QueryString("foo2", "bar2").
 		Header("foo3", "bar3").
-		OnWhen(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
+		On(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -51,7 +51,7 @@ func (c *ClientSuite) Test_RequestIDMiddleware() {
 	err := New().
 		Use(RequestIDMiddleware()).
 		Get(server.URL).
-		OnWhen(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
+		On(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().NoError(err)
@@ -81,7 +81,7 @@ func (c *ClientSuite) Test_ErrorHandlerMiddleware() {
 			return errors.Join(processedError, httpError)
 		})).
 		Get(server.URL).
-		OnWhen(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
+		On(StatusAnyExcept(http.StatusOK), ThenReturnError(errors.New("unexpected status"))).
 		Send()
 
 	c.Require().ErrorIs(err, processedError)

@@ -28,7 +28,7 @@ func TestNewInpuZapLogger(t *testing.T) {
 	inpu.DefaultLogger = NewInpuLoggerFromZapLogger(logger)
 
 	err := client.Post("/", nil).
-		OnWhen(inpu.StatusAnyExcept(http.StatusOK), inpu.ThenReturnError(errors.New("unexpected status"))).
+		On(inpu.StatusAnyExcept(http.StatusOK), inpu.ThenReturnError(errors.New("unexpected status"))).
 		Send()
 	if err != nil {
 		t.FailNow()

@@ -1,6 +1,7 @@
 package inpu
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"net/http"
@@ -8,6 +9,8 @@ import (
 	"strconv"
 	"time"
 )
+
+const ContextKeyRetryAttempt = "inpu_retry_attempt"
 
 var (
 	retriableClientErrors    = []int{http.StatusTooManyRequests}
@@ -75,6 +78,7 @@ func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 	for attempt := 0; attempt <= t.config.MaxRetries; attempt++ {
 		// Clone request for retry (important for body)
 		clonedReq := t.cloneRequest(req)
+		clonedReq = clonedReq.WithContext(context.WithValue(clonedReq.Context(), ContextKeyRetryAttempt, attempt))
 		resp, err = t.next.RoundTrip(clonedReq)
 
 		// Check if we should retry
@@ -216,4 +220,15 @@ func parseRetryAfterHeader(header string) (time.Duration, bool) {
 
 	// date is in the past
 	return 0, true
+}
+
+// ExtractRetryAttemptFromContext returns the current retry attempt number from the context.
+// Returns 0 if not in a retry context (i.e., first attempt or no retry middleware).
+func ExtractRetryAttemptFromContext(ctx context.Context) int {
+	attempt, ok := ctx.Value(ContextKeyRetryAttempt).(int)
+	if !ok {
+		return 0
+	}
+
+	return attempt
 }

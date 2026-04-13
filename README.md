@@ -6,12 +6,12 @@ To download:`go get github.com/denizgursoy/inpu`
 
 ## Build the request and send
 ```go
-err :=  inpu.Get("https://jsonplaceholder.typicode.com/todos").
-            QueryBool("completed", true).
-            QueryInt("userId", 2).
-            OnReplyIf(inpu.StatusIsOk, inpu.ThenUnmarshalJsonTo(&filteredTodos)).
-	        OnReplyIf(inpu.StatusAny, inpu.ThenReturnDefaultError).
-            Send()
+err := inpu.Get("https://jsonplaceholder.typicode.com/todos").
+    QueryBool("completed", true).
+    QueryInt("userId", 2).
+    OnOk(inpu.ThenUnmarshalJsonTo(&filteredTodos)).
+    OnAny(inpu.ThenReturnDefaultError).
+    Send()
 ```
 Does the following call
 ```
@@ -20,8 +20,69 @@ https://jsonplaceholder.typicode.com/todos?completed=true&userId=2
 It will marshal the response body to `filteredTodos` if status code `200`. If response code anything except `200`, It will
 return `called [GET] -> https://jsonplaceholder.typicode.com/todos?completed=true&userId=2 and got 500` error to provide more information.
 
-## Check the status code and unmarshall the body
-`OnReplyIf` method allows developers to execute `type ResponseHandler func(r *http.Response) error` operation matched by `StatusMatcher`
+## Check the status code and unmarshal the body
+
+### Shorthand methods
+Every status matcher has a corresponding shorthand method on the request. These read like natural sentences:
+```go
+OnOk(inpu.ThenUnmarshalJsonTo(&filteredTodos)).          // on 200, unmarshal JSON
+OnCreated(inpu.ThenDoNothing).                            // on 201, do nothing
+OnNotFound(inpu.ThenReturnError(ErrItemNotFound)).        // on 404, return custom error
+OnUnauthorized(inpu.ThenReturnError(ErrUnauthorized)).    // on 401, return custom error
+OnSuccess(inpu.ThenUnmarshalJsonTo(&result)).             // on any 2xx, unmarshal JSON
+OnClientError(inpu.ThenReturnDefaultError).               // on any 4xx, return default error
+OnServerError(inpu.ThenReturnDefaultError).               // on any 5xx, return default error
+OnAny(inpu.ThenReturnDefaultError).                       // fallback for any status
+OnAnyExcept(http.StatusOK, inpu.ThenReturnDefaultError).  // any status except 200
+```
+
+Parameterized shorthands:
+```go
+On(http.StatusOK, inpu.ThenUnmarshalJsonTo(&result)).                                  // match a single status code
+OnOneOf(inpu.ThenDoNothing, http.StatusOK, http.StatusCreated, http.StatusAccepted).   // match any of several codes
+OnAnyExceptOneOf(inpu.ThenReturnDefaultError, http.StatusOK, http.StatusCreated).      // match any except several codes
+```
+
+Available shorthand methods for individual status codes:
+
+| 1xx Informational | 2xx Success | 3xx Redirection | 4xx Client Error | 5xx Server Error |
+|---|---|---|---|---|
+| OnContinue | OnOk | OnMultipleChoices | OnBadRequest | OnInternalServerError |
+| OnSwitchingProtocols | OnCreated | OnMovedPermanently | OnUnauthorized | OnNotImplemented |
+| OnProcessing | OnAccepted | OnFound | OnPaymentRequired | OnBadGateway |
+| OnEarlyHints | OnNonAuthoritativeInfo | OnSeeOther | OnForbidden | OnServiceUnavailable |
+| | OnNoContent | OnNotModified | OnNotFound | OnGatewayTimeout |
+| | OnResetContent | OnUseProxy | OnMethodNotAllowed | OnHTTPVersionNotSupported |
+| | OnPartialContent | OnTemporaryRedirect | OnNotAcceptable | OnVariantAlsoNegotiates |
+| | OnMultiStatus | OnPermanentRedirect | OnProxyAuthRequired | OnInsufficientStorage |
+| | OnAlreadyReported | | OnRequestTimeout | OnLoopDetected |
+| | OnIMUsed | | OnConflict | OnNotExtended |
+| | | | OnGone | OnNetworkAuthenticationRequired |
+| | | | OnLengthRequired | |
+| | | | OnPreconditionFailed | |
+| | | | OnRequestEntityTooLarge | |
+| | | | OnRequestURITooLong | |
+| | | | OnUnsupportedMediaType | |
+| | | | OnRequestedRangeNotSatisfiable | |
+| | | | OnExpectationFailed | |
+| | | | OnTeapot | |
+| | | | OnMisdirectedRequest | |
+| | | | OnUnprocessableEntity | |
+| | | | OnLocked | |
+| | | | OnFailedDependency | |
+| | | | OnTooEarly | |
+| | | | OnUpgradeRequired | |
+| | | | OnPreconditionRequired | |
+| | | | OnTooManyRequests | |
+| | | | OnRequestHeaderFieldsTooLarge | |
+| | | | OnUnavailableForLegalReasons | |
+
+Category-level shorthands: `OnSuccess`, `OnInformational`, `OnRedirection`, `OnClientError`, `OnServerError`
+
+Wildcard shorthands: `OnAny`, `OnAnyExcept`, `OnAnyExceptOneOf`
+
+### OnReplyIf (advanced usage)
+`OnReplyIf` method allows developers to execute `type ResponseHandler func(r *http.Response) error` operation matched by `StatusMatcher`. Use this when you need to combine matchers with `Not` or for other advanced patterns:
 ```go
 OnReplyIf(inpu.StatusIsSuccess, inpu.ThenUnmarshalJsonTo(&filteredTodos)). // it marshals the body to the variable
 OnReplyIf(inpu.StatusAny, inpu.ThenReturnError(errors.New("could not fetch the todo items"))). // it returns the error if status does not match any condition
@@ -118,7 +179,7 @@ You can also add custom handler:
 err := inpu.Get("https://jsonplaceholder.typicode.com/todos").
     QueryBool("completed", true).
     QueryInt("userId", 2).
-    OnReplyIf(inpu.StatusAny, func(r *http.Response) error {
+    OnAny(func(r *http.Response) error {
         // custom processing
         return nil
     }).

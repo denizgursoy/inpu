@@ -36,7 +36,11 @@ type Client struct {
 }
 
 func New() *Client {
-	ctx, cancel := context.WithCancel(context.Background())
+	return NewWithContext(context.Background())
+}
+
+func NewWithContext(ctx context.Context) *Client {
+	ctx, cancel := context.WithCancel(ctx)
 
 	client := DefaultPooledClient()
 	transport := client.Transport.(*http.Transport)

@@ -1,7 +1,6 @@
 package inpu
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"reflect"
@@ -26,7 +25,7 @@ func ThenUnmarshalJsonTo(targetAsPointer any) ResponseHandler {
 			return ErrNotPointerParameter
 		}
 
-		return json.NewDecoder(r.Body).Decode(targetAsPointer)
+		return jsonUnmarshalFromReader(r.Body, targetAsPointer)
 	}
 }
 

@@ -18,7 +18,22 @@ const (
 	LogLevelDebug
 )
 
-var DefaultLogger = NewInpuLoggerFromSlog(LogLevelInfo)
+// DefaultLogger is the fallback logger used when no logger is found in the context.
+// By default it is a no-op logger that discards all output. Assign SlogLogger or a
+// custom Logger implementation to enable logging globally.
+var DefaultLogger Logger = noopLogger{}
+
+// SlogLogger is a ready-to-use JSON logger that writes to stdout at INFO level.
+// Assign it to DefaultLogger or inject it via ContextWithLogger to enable logging.
+var SlogLogger = NewInpuLoggerFromSlog(LogLevelInfo)
+
+// noopLogger discards all log messages.
+type noopLogger struct{}
+
+func (noopLogger) Error(context.Context, error, string, ...any) {}
+func (noopLogger) Warn(context.Context, string, ...any)         {}
+func (noopLogger) Info(context.Context, string, ...any)         {}
+func (noopLogger) Debug(context.Context, string, ...any)        {}
 
 func ContextWithLogger(ctx context.Context, logger Logger) context.Context {
 	return context.WithValue(ctx, ContextKeyLogger, logger)

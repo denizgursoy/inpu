@@ -56,6 +56,16 @@ client := inpu.New().
 
 `New()` returns a `*Client` with a pooled HTTP transport. All configuration methods return `*Client` for chaining.
 
+`NewWithContext(ctx)` works the same but uses the provided context as the parent. When that context
+is cancelled, all in-flight requests from the client are automatically cancelled:
+
+```go
+ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+defer cancel()
+
+client := inpu.NewWithContext(ctx)
+```
+
 ### Client Configuration
 
 | Method | Description |
@@ -453,6 +463,8 @@ Automatically obtains and refreshes OAuth2 tokens using the client credentials f
 
 ## Logging
 
+By default, inpu is **silent** — no log output is produced. Logging is opt-in.
+
 ### Logger Interface
 
 ```go
@@ -464,9 +476,47 @@ type Logger interface {
 }
 ```
 
+### Enabling Logging
+
+There are three ways to enable logging:
+
+**1. Set the global default logger:**
+
+```go
+// Use the built-in slog JSON logger
+inpu.DefaultLogger = inpu.SlogLogger
+
+// Or use a custom logger
+inpu.DefaultLogger = myCustomLogger
+```
+
+This affects all requests across all clients. Middlewares like `RetryMiddleware` that log
+internally will use this logger as a fallback when no context logger is set.
+
+**2. Inject a logger into the context (per-request):**
+
+```go
+ctx := inpu.ContextWithLogger(ctx, logger)
+err := inpu.GetCtx(ctx, "https://api.example.com/items").Send()
+```
+
+This takes precedence over `DefaultLogger` for that specific request.
+
+**3. Add the LoggingMiddleware (logs HTTP traffic):**
+
+```go
+client := inpu.New().
+    Use(inpu.LoggingMiddleware(false, false))  // (verbose, disabled)
+```
+
+The `LoggingMiddleware` logs request/response details (method, URL, status, duration).
+With `verbose=true`, it also logs headers and bodies. Sensitive headers
+(`Authorization`, `Cookie`, etc.) are automatically masked.
+
 ### Built-in Logger (slog)
 
-The default logger uses `log/slog` with JSON output:
+A ready-to-use JSON logger is available as `inpu.SlogLogger`. You can also create one
+with a specific level:
 
 ```go
 logger := inpu.NewInpuLoggerFromSlog(inpu.LogLevelInfo) // LogLevelDebug, LogLevelWarn, LogLevelError
@@ -498,15 +548,8 @@ logger := inpuzero.NewInpuLoggerFromZeroLog()
 
 ### Context Logger Injection
 
-Inject a logger into the context so middlewares use it:
-
-```go
-ctx := inpu.ContextWithLogger(ctx, logger)
-err := inpu.GetCtx(ctx, "https://api.example.com/items").Send()
-```
-
-Retrieve it with `inpu.ExtractLoggerFromContext(ctx)`. The logging middleware and built-in logger automatically
-include `request_id` when `RequestIDMiddleware` is active.
+Retrieve the active logger with `inpu.ExtractLoggerFromContext(ctx)`. The logging middleware
+and built-in logger automatically include `request_id` when `RequestIDMiddleware` is active.
 
 ## Errors
 

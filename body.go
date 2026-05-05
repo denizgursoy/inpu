@@ -2,7 +2,6 @@ package inpu
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -37,7 +36,7 @@ func BodyXml(body any) Requester {
 }
 
 func BodyJson(body any) Requester {
-	jsonData, err := json.Marshal(body)
+	jsonData, err := jsonMarshal(body)
 	if err != nil {
 		return newRequestBody(nil, fmt.Errorf("could not marshal to JSON: %w", err))
 	}

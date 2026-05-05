@@ -2,6 +2,7 @@ package inpu
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"slices"
@@ -9,21 +10,61 @@ import (
 	"time"
 )
 
+const defaultMaxBodyLogSize = 4096
+
 var sensitiveHeaders = []string{HeaderAuthorization, HeaderAPISecret, HeaderAPIKey, HeaderAPIToken, HeaderCookie}
 
-// LogLevel represents the logging verbosity level
+// LoggingOption configures the logging middleware.
+type LoggingOption func(*loggingMiddleware)
 
-type loggingMiddleware struct {
-	verbose  bool
-	disabled bool
-	next     http.RoundTripper
+// WithVerbose enables verbose logging of headers and bodies.
+func WithVerbose() LoggingOption {
+	return func(l *loggingMiddleware) {
+		l.verbose = true
+	}
 }
 
-// LoggingMiddleware creates a logging middleware
+// WithDisabled creates the middleware in a disabled state (no-op passthrough).
+func WithDisabled() LoggingOption {
+	return func(l *loggingMiddleware) {
+		l.disabled = true
+	}
+}
+
+// WithMaxBodyLogSize sets the maximum number of bytes to log for request/response bodies.
+// Bodies exceeding this size are truncated. Default is 4096 bytes.
+func WithMaxBodyLogSize(n int) LoggingOption {
+	return func(l *loggingMiddleware) {
+		l.maxBodyLogSize = n
+	}
+}
+
+type loggingMiddleware struct {
+	verbose        bool
+	disabled       bool
+	maxBodyLogSize int
+	next           http.RoundTripper
+}
+
+// NewLoggingMiddleware creates a logging middleware with the provided options.
+func NewLoggingMiddleware(opts ...LoggingOption) Middleware {
+	m := &loggingMiddleware{
+		maxBodyLogSize: defaultMaxBodyLogSize,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// LoggingMiddleware creates a logging middleware.
+//
+// Deprecated: Use NewLoggingMiddleware(WithVerbose(), ...) instead.
 func LoggingMiddleware(verbose, disabled bool) Middleware {
 	return &loggingMiddleware{
-		verbose:  verbose,
-		disabled: disabled,
+		verbose:        verbose,
+		disabled:       disabled,
+		maxBodyLogSize: defaultMaxBodyLogSize,
 	}
 }
 
@@ -57,7 +98,7 @@ func (t *loggingMiddleware) RoundTrip(req *http.Request) (*http.Response, error)
 		if req.Body != nil {
 			body, _ := io.ReadAll(req.Body)
 			req.Body = io.NopCloser(bytes.NewBuffer(body))
-			logger.Info(ctx, "  Body: %s", string(body))
+			logger.Info(ctx, "  Body: %s", t.truncateBody(body))
 		}
 	}
 
@@ -67,6 +108,11 @@ func (t *loggingMiddleware) RoundTrip(req *http.Request) (*http.Response, error)
 
 	// Log response
 	if err != nil {
+		if t.verbose && resp != nil && resp.Body != nil {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body = io.NopCloser(bytes.NewBuffer(body))
+			logger.Info(ctx, "  Error Response Body: %s", t.truncateBody(body))
+		}
 		logger.Error(ctx, err, "← [%s] %s - ERROR: %v (took %v)", req.Method, req.URL.Redacted(), err, duration)
 
 		return resp, err
@@ -79,11 +125,18 @@ func (t *loggingMiddleware) RoundTrip(req *http.Request) (*http.Response, error)
 		if resp.Body != nil {
 			body, _ := io.ReadAll(resp.Body)
 			resp.Body = io.NopCloser(bytes.NewBuffer(body))
-			logger.Info(ctx, "  Response Body: %s", string(body))
+			logger.Info(ctx, "  Response Body: %s", t.truncateBody(body))
 		}
 	}
 
 	return resp, nil
+}
+
+func (t *loggingMiddleware) truncateBody(body []byte) string {
+	if t.maxBodyLogSize > 0 && len(body) > t.maxBodyLogSize {
+		return fmt.Sprintf("%s... (truncated, %d bytes total)", string(body[:t.maxBodyLogSize]), len(body))
+	}
+	return string(body)
 }
 
 func headersToString(headers http.Header) string {

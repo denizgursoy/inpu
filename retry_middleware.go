@@ -94,7 +94,7 @@ func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 			case <-req.Context().Done():
 				return resp, req.Context().Err()
 			case <-time.After(timeToWait):
-				logger.Info(ctx, "[RETRY] Attempt %d/%d for %s %s (waiting %v)", attempt+1, t.config.MaxRetries,
+				logger.Debug(ctx, "[RETRY] Attempt %d/%d for %s %s (waiting %v)", attempt+1, t.config.MaxRetries,
 					req.Method, req.URL.Redacted(), timeToWait)
 				// drain the body and close the connection because
 				// it is going to send another request soon
@@ -107,6 +107,9 @@ func (t *retryMiddleware) RoundTrip(req *http.Request) (*http.Response, error) {
 			backoff = t.getMaxBackoffTimeIfBigger(backoff)
 		}
 	}
+
+	logger.Warn(ctx, "[RETRY] All %d retries exhausted for %s %s", t.config.MaxRetries,
+		req.Method, req.URL.Redacted())
 
 	return resp, err
 }

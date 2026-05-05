@@ -333,7 +333,7 @@ Add middlewares to a client with `Use()`. Middlewares are sorted by priority (lo
 ```go
 client := inpu.New().
     Use(inpu.RetryMiddleware(2)).
-    Use(inpu.LoggingMiddleware(true, false)).
+    Use(inpu.NewLoggingMiddleware(inpu.WithVerbose())).
     Use(inpu.RequestIDMiddleware())
 ```
 
@@ -341,10 +341,28 @@ client := inpu.New().
 
 | Middleware | Priority | Description |
 |---|---|---|
-| `LoggingMiddleware(verbose, disabled)` | 1 | Logs requests/responses. Masks sensitive headers. |
+| `NewLoggingMiddleware(opts...)` | 1 | Logs requests/responses. Masks sensitive headers. |
 | `RequestIDMiddleware()` | 100 | Adds `X-Request-ID` header and stores ID in context |
 | `ErrorHandlerMiddleware(handler)` | 50 | Calls handler on connection errors |
 | `RetryMiddleware(maxRetries)` | 25 | Retries on server errors and 429 with exponential backoff |
+
+### Logging Middleware Options
+
+```go
+inpu.NewLoggingMiddleware(
+    inpu.WithVerbose(),            // log headers and bodies
+    inpu.WithMaxBodyLogSize(8192), // truncate bodies larger than 8KB (default: 4KB)
+)
+```
+
+| Option | Description |
+|---|---|
+| `WithVerbose()` | Log request/response headers and bodies |
+| `WithDisabled()` | Create middleware in disabled state (no-op passthrough) |
+| `WithMaxBodyLogSize(n)` | Max bytes to log for bodies; larger bodies are truncated (default: 4096) |
+
+In verbose mode, bodies exceeding the max size are logged as:
+`{"key":"value"...} ... (truncated, 52431 bytes total)`
 
 ### Retry Configuration
 
